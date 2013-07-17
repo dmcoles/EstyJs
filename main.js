@@ -43,6 +43,10 @@ function openFile3() {
 	estyjs.openFile('dmaster.sts');
 }
 
+function openFile4() {
+	estyjs.openFile('speedball2.sts');
+}
+
 function changeJoystick() {
 	estyjs.setJoystick($('#joystick').prop('checked'));
 }

@@ -370,7 +370,26 @@ EstyJs.mfp = function(opts) {
 
 	self.startRow = function() {
 		
-		if (timerBcontrol >0 && display.displayOn) {
+		//event count or pulse width
+		if (timerAcontrol >=8 && display.displayOn) {
+			timerAcntr2++;
+			if (timerAcntr2>=timerAdiv) {
+				timerAcntr2 = 0;
+				timerAcntr = (timerAcntr-1)&0xff;
+			
+				//do event when timer A reaches 0
+				if (timerAcntr==0) {
+					timerAcntr = timerAdata;
+					
+					if ((interruptEnableA & 32)!=0) {
+						self.interruptRequest(13);
+					}
+				}
+			}
+		}
+
+		//event count or pulse width
+		if (timerBcontrol >=8 && display.displayOn) {
 			timerBcntr2++;
 			if (timerBcntr2>=timerBdiv) {
 				timerBcntr2 = 0;
@@ -386,6 +405,44 @@ EstyJs.mfp = function(opts) {
 				}
 			}
 		}
+		
+		if (timerAcontrol >0 && timerAcontrol<8) {
+			timerAcntr2+=512;
+
+			while (timerAcntr2>=timerAdiv*clockCyclesPerCpuCycle) {
+				timerAcntr2 -= timerAdiv*clockCyclesPerCpuCycle;
+				timerAcntr = (timerAcntr-1)&0xff;
+
+
+				//do event when timer A reaches 0
+				if (timerAcntr==0) {
+					timerAcntr = timerAdata;
+					
+					if ((interruptEnableA & 32)!=0) {
+						self.interruptRequest(13);
+					}
+				}
+			}
+		}		
+		
+		if (timerBcontrol >0 && timerBcontrol<8) {
+			timerBcntr2+=512;
+
+			while (timerBcntr2>=timerBdiv*clockCyclesPerCpuCycle) {
+				timerBcntr2 -= timerBdiv*clockCyclesPerCpuCycle;
+				timerBcntr = (timerBcntr-1)&0xff;
+
+
+				//do event when timer B reaches 0
+				if (timerBcntr==0) {
+					timerBcntr = timerBdata;
+					
+					if ((interruptEnableA & 1)!=0) {
+						self.interruptRequest(8);
+					}
+				}
+			}
+		}		
 		
 		if (timerCcontrol >0 ) {
 			timerCcntr2+=512;
@@ -405,6 +462,25 @@ EstyJs.mfp = function(opts) {
 				}
 			}
 		}
+		
+		if (timerDcontrol >0 ) {
+			timerDcntr2+=512;
+
+			while (timerDcntr2>=timerDdiv*clockCyclesPerCpuCycle) {
+				timerDcntr2 -= timerDdiv*clockCyclesPerCpuCycle;
+				timerDcntr = (timerDcntr-1)&0xff;
+
+
+				//do event when timer C reaches 0
+				if (timerDcntr==0) {
+					timerDcntr = timerDdata;
+					
+					if ((interruptEnableB & 0x10)!=0) {
+						self.interruptRequest(4);
+					}
+				}
+			}
+		}
 	}
 
 	self.setDisplay = function(d) {
@@ -417,6 +493,13 @@ EstyJs.mfp = function(opts) {
 		gpio |= 0x20;
 	
 		switch (lvl) {
+			//timer D interrupt
+			case 4:
+				if (interruptEnableB & interruptMaskB & 0x10) {
+					interruptPendingB |=0x10;
+				}
+				break;
+			//timer C interrupt
 			case 5:
 				if (interruptEnableB & interruptMaskB & 0x20) {
 					interruptPendingB |=0x20;
@@ -427,9 +510,16 @@ EstyJs.mfp = function(opts) {
 					interruptPendingB |=0x40;
 				}
 				break;
+			//timer B interrupt
 			case 8:
 				if (interruptEnableA & interruptMaskA & 1) {
 					interruptPendingA |=1;
+				}
+				break;
+			//timer A interrupt
+			case 13:
+				if (interruptEnableA & interruptMaskA & 0x20) {
+					interruptPendingA |=0x20;
 				}
 				break;
 		}
@@ -467,6 +557,12 @@ EstyJs.mfp = function(opts) {
 		}
 		
 		return undefined;
+	}
+	
+	self.setSnapshotRegs = function(regs) {
+		for (var i = 0; i<regs.length; i++) {
+			self.writeData(0xfffa01+(i<<1),regs[i]);
+		}
 	}
 	
 	return self;

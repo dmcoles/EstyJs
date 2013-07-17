@@ -3,10 +3,10 @@
 
 EstyJs.Memory = function(opts) {
 	var self = {};
-	
-	var ramsize = 512*1024;
+
+	var defaultRamsize=512*1024;
 	var romsize = 128*1024;
-	var ram = new Uint8Array(ramsize);
+	var ram = new Uint8Array(defaultRamsize);
 	var rom = new Uint8Array(romsize);
 
 	var  io = opts.io;
@@ -52,7 +52,7 @@ EstyJs.Memory = function(opts) {
 			return rom[addr];
 		}
 	
-		if (addr<ramsize) {
+		if (addr<ram.length) {
 			return ram[addr];
 		}
 		
@@ -95,7 +95,7 @@ EstyJs.Memory = function(opts) {
 	self.writeByte = function(addr,val) {
 		val = val & 0xff;
 		addr = addr & 0xffffff;
-		if (addr<ramsize)
+		if (addr<ram.length)
 		{
 			ram[addr] = val;
 		}	
@@ -131,7 +131,7 @@ EstyJs.Memory = function(opts) {
 	}
 	
 	self.reset = function() {
-		for (var i=0; i<ramsize; i++) ram[i] = 0;
+		for (var i=0; i<ram.length; i++) ram[i] = 0;
 	}
 	
 	self.setProcessor = function(p) {

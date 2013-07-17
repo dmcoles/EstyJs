@@ -75,6 +75,7 @@ function EstyJs(output) {
 		io : io,
 		display: display,
 		keyboard: keyboard,
+		mfp: mfp,
 		processor: processor
 	});
 

@@ -71,13 +71,21 @@ EstyJs.SnapshotFile = function(opts) {
 		displayRegs.screenMode = readByte(buffer,166);
 		displayRegs.palette = new Array();
 		for (var i=0; i<32; i++) {
-			displayRegs.palette.push(readByte(buffer,94+i));
+			displayRegs.palette.push(readByte(buffer,94+(i^1)));   /// ^1 to reverse the byte order
 		}
 		
 		display.setSnapshotRegs(displayRegs);
 
-		//mmu config
-		io.write(0xFF8001,readByte(buffer,167));
+		//mmu config - not sure about this
+		//io.write(0xFF8001,readByte(buffer,167));
+		
+		io.write(0xFFFA07,0);
+		io.write(0xFFFA09,64);
+		
+		var mfpregs = new Array();
+		for (var i=0; i<24; i++) {
+			mfpregs.push(readByte(buffer,172+i));
+		}
 		
 		var keyboardregs = new Object();
 		switch(readLong(buffer,295)) {
@@ -111,6 +119,8 @@ EstyJs.SnapshotFile = function(opts) {
 		keyboard.setSnapshotRegs(keyboardregs);
 		
 		var tosFileLen = readLong(buffer,1954);
+		var rambanksize1 = readLong(buffer,1958+tosFileLen+2);
+		var rambanksize2 = readLong(buffer,1958+tosFileLen+6);
 		var stringStart = 1958+tosFileLen+10;
 		for (i=0; i<30; i++) {
 			var stringLen = readLong(buffer,stringStart);
@@ -123,8 +133,8 @@ EstyJs.SnapshotFile = function(opts) {
 		var memvalue = readWord(buffer,memoffset);
 		var repeatvalue = 0;
 		memoffset+=2;
-		var o = 0x80000;
-		membuff = new Uint8Array(0x80000);
+		var o = rambanksize1+rambanksize2;
+		membuff = new Uint8Array(o);
 		while (memvalue!=0xffff) {
 			if (memvalue<0x8000) {
 				for (var i=0; i<memvalue; i++) {

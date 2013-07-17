@@ -624,13 +624,16 @@ EstyJs.Keyboard = function(opts) {
 
 		
 		if (mouseMode=='R') {
-			if ((Math.abs(oldMouseX-mouseX)>mouseXthreshold) || (Math.abs(oldMouseY-mouseY)>mouseYthreshold) || oldLeftDown!=leftDown || oldRightDown!=rightDown) {
+			var xd = (mouseX-oldMouseX) >>1;
+			var yd = (mouseY-oldMouseY) >>1;
+			
+			if ((Math.abs(xd)>mouseXthreshold) || (Math.abs(yd)>mouseYthreshold) || oldLeftDown!=leftDown || oldRightDown!=rightDown) {
 				dataOut.push(0xf8 | (leftDown ? 2 : 0) | (rightDown ? 1: 0)); //mouse buttons
-				dataOut.push(mouseX-oldMouseX);
+				dataOut.push(xd);
 				if (invertY) {			
-					dataOut.push(-mouseY-oldMouseY);								
+					dataOut.push(-yd);
 				} else {
-					dataOut.push(mouseY-oldMouseY);								
+					dataOut.push(yd);	
 				}
 
 				oldMouseX = mouseX;
