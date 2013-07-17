@@ -9,6 +9,7 @@ EstyJs.SnapshotFile = function(opts) {
 	var io = opts.io;
 	var display = opts.display;
 	var keyboard = opts.keyboard;
+	var mfp = opts.mfp;
 	
 	function readByte(buffer,offset) {
 		return buffer[offset];
@@ -86,6 +87,7 @@ EstyJs.SnapshotFile = function(opts) {
 		for (var i=0; i<24; i++) {
 			mfpregs.push(readByte(buffer,172+i));
 		}
+		mfp.setSnapshotRegs(mfpregs);
 		
 		var keyboardregs = new Object();
 		switch(readLong(buffer,295)) {
