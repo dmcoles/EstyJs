@@ -1,0 +1,51 @@
+#estyjs
+{
+    position:absolute;
+    top:60px;
+    left: 420px;
+}
+
+#accordion
+{
+	position: absolute;
+	width: 400px;
+	top: 60px;
+	font-size: 0.75em;
+
+}
+
+#buttonpanel
+{
+	padding-bottom: 3px;
+}
+
+body
+{
+	background-color:#555555;
+}	
+
+canvas
+{
+	background-color:#000000;
+	border: 1px solid #777777;
+}
+
+header
+{
+	background: url("images/ui-bg_diagonals-thick_15_0b3e6f_40x40.png") repeat scroll 50% 50% #444444;
+    border: 1px solid #333333;
+	font-family: 'Fauna One', serif;
+	font-size: 1em;
+    height: 30px;
+    left: 0px;
+	padding-top: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+    position: absolute;
+    top: 0;
+    width: 100%;
+	color: white;
+    z-index: 1;	
+	
+}
+

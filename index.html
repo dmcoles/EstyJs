@@ -1,0 +1,86 @@
+<!DOCTYPE HTML>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta name="description" content="Javascript based Atari ST Emulator">
+<meta name="keywords" content="JavaScript, Atari, ST, Emulator, EstyJs">
+<meta name="author" content="Darren Coles">
+<html>
+	<head>
+		<title>EstyJs</title>
+		<link href='http://fonts.googleapis.com/css?family=Fauna+One' rel='stylesheet' type='text/css'>
+		<link rel="stylesheet" type="text/css" href="css/estyjs.css" />
+		<link href="css/jquery-ui-1.10.3.custom.min.css" type="text/css" rel="stylesheet">
+		<script src="jquery/jquery-1.9.1.js"></script>
+		<script src="jquery/jquery-ui-1.10.3.custom.min.js"></script>
+
+		<script src="estyjs.js"></script>
+		<script src="processor.js"></script>
+		<script src="keyboard.js"></script>
+		<script src="mfp.js"></script>
+		<script src="fdc.js"></script>
+		<script src="io.js"></script>
+		<script src="bug.js"></script>
+		<script src="display.js"></script>
+		<script src="memory.js"></script>
+		<script src="snapshot.js"></script>
+		<script src="sound.js"></script>
+		<script src="main.js"></script>
+		
+
+		<script>
+			$(function() {
+				$("button").button();
+				document.getElementById('selectedFile').addEventListener('change', fileSelected, false);
+				$( "#accordion" ).accordion();
+				estyjs = EstyJs("EstyJsOutput");
+			});
+		</script>
+	</head>
+	<body>
+		<header>EstyJS - The Javascript Atari ST Emulator</header>
+		<div id="accordion">
+			<h3>Atari ST</h3>
+			<div>	
+				Work in progress<br/><br/>
+				Currently there are many things not emulated:
+				<ol>
+					<li>Floppies</li>
+					<li>Sound</li>
+					<li>Partial keyboard/mouse/joystick</li>
+					<li>Partial timer support</li>
+				</ol></br>
+				Hints:<br/>
+				try not to move the mouse during the boot process as it will stop the mouse working<br/>
+				<br/>Joystick 1 is emulated using cursor keys and ctrl.
+				
+				
+			</div>
+			<h3>EstyJS</h3>
+			<div>
+			</div>
+			
+			<h3>Credits</h3>
+			<div>
+			<u>EstyJS</u><br/><br/>
+			</div>
+		</div>
+		<div id="estyjs">
+			<canvas id = "EstyJsOutput" width="640" height="400" >
+			</canvas>
+			<div id = "buttonpanel">
+			<button onclick="reset()" id="btnReset">Reset</button>
+			<button onclick="pauseResume()" id="btnPause">Pause</button>
+			<button onclick="soundToggle()" id="btnSound">Sound off</button>
+			<button onclick="document.getElementById('selectedFile').click();" style="display: none;"  id="btnBrowse">Browse</button>
+			<button onclick="openFile()" style="display: none;" id="btnOpen">Open</button>
+			<input type="file" id="selectedFile" style="display: none;" />
+			<button onclick="openFile2()" id="btnTest">Test</button>
+			<button onclick="openFile3()" id="btnTest">Test2</button>
+			<input type="checkbox" id="joystick" checked="checked" onclick="changeJoystick()" >Joystick<br>			
+			
+			</div>
+		</div>
+		
+		
+	</body>
+</html>
+	
