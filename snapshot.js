@@ -80,8 +80,8 @@ EstyJs.SnapshotFile = function(opts) {
 		//mmu config - not sure about this
 		//io.write(0xFF8001,readByte(buffer,167));
 		
-		io.write(0xFFFA07,0);
-		io.write(0xFFFA09,64);
+		//io.write(0xFFFA07,0);
+		//io.write(0xFFFA09,64);
 		
 		var mfpregs = new Array();
 		for (var i=0; i<24; i++) {

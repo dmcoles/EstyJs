@@ -560,9 +560,14 @@ EstyJs.mfp = function(opts) {
 	}
 	
 	self.setSnapshotRegs = function(regs) {
-		for (var i = 0; i<regs.length; i++) {
-			self.writeData(0xfffa01+(i<<1),regs[i]);
-		}
+		//for (var i = 0; i<regs.length; i++) {
+		//	self.writeData(0xfffa01+(i<<1),regs[i]);
+        //}
+
+        self.writeData(0xfffa07, regs[3]);
+        self.writeData(0xfffa09, regs[4]);
+
+
 	}
 	
 	return self;
