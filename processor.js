@@ -34,29 +34,29 @@ EstyJs.Processor = function(opts) {
 
 	var pendingInterrupts = new Array(false,false,false,false,false,false,false);
 	
-	const frameRowCycles = 512;
+	var frameRowCycles = 512;
 	
 	
-	const M_rdd		=  1; /* Register Direct Data */
-	const M_rda		=  2; /* Register Direct Address */
-	const M_ria		=  3; /* Register Indirect Address */
-	const M_ripo	=  4; /* Register Indirect	Address with Postincrement */
-	const M_ripr	=  5; /* Register Indirect	Address with Predecrement */
-	const M_rid		=  6; /* Register Indirect	Address with Displacement */
-	const M_rii		=  7; /* Address Register Indirect, with Index (8-Bit Displacement) */
-	const M_pcid	=  8; /* Program Counter Indirect with Displacement */
-	const M_pcii	=  9; /* Program Counter Indirect with Index	(8-Bit Displacement) */
-	const M_absw	= 10; /* Absolute Data Addressing */
-	const M_absl	= 11; /* Absolute Data Addressing */
-	const M_imm		= 12; /* Immediate Data */
-	const M_list	= 16; /* Ax,Dx-list for easy MOVEM debug */
+	var M_rdd		=  1; /* Register Direct Data */
+	var M_rda		=  2; /* Register Direct Address */
+	var M_ria		=  3; /* Register Indirect Address */
+	var M_ripo	=  4; /* Register Indirect	Address with Postincrement */
+	var M_ripr	=  5; /* Register Indirect	Address with Predecrement */
+	var M_rid		=  6; /* Register Indirect	Address with Displacement */
+	var M_rii		=  7; /* Address Register Indirect, with Index (8-Bit Displacement) */
+	var M_pcid	=  8; /* Program Counter Indirect with Displacement */
+	var M_pcii	=  9; /* Program Counter Indirect with Index	(8-Bit Displacement) */
+	var M_absw	= 10; /* Absolute Data Addressing */
+	var M_absl	= 11; /* Absolute Data Addressing */
+	var M_imm		= 12; /* Immediate Data */
+	var M_list	= 16; /* Ax,Dx-list for easy MOVEM debug */
 
-	const T_RD = 1; /* Register Data */
-	const T_RA = 2; /* Register Address */
-	const T_AD = 3; /* Address */
-	const T_IM = 4; /* Immediate */
+	var T_RD = 1; /* Register Data */
+	var T_RA = 2; /* Register Address */
+	var T_AD = 3; /* Address */
+	var T_IM = 4; /* Immediate */
 
-	const ccNames = ['T', 'F', 'HI', 'LS', 'CC', 'CS', 'NE', 'EQ', 'VC', 'VS', 'PL', 'MI', 'GE', 'LT', 'GT', 'LE'];
+	var ccNames = ['T', 'F', 'HI', 'LS', 'CC', 'CS', 'NE', 'EQ', 'VC', 'VS', 'PL', 'MI', 'GE', 'LT', 'GT', 'LE'];
 
 	/* Effective Address */
 	function effAddr(m, r) {
@@ -103,7 +103,7 @@ EstyJs.Processor = function(opts) {
 
 	/*-----------------------------------------------------------------------*/
 
-	const undef = false; /* use undef */
+	var undef = false; /* use undef */
 
 	var regs = {
 		//d: [0, 0, 0, 0, 0, 0, 0, 0], /* Dn */

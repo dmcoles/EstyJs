@@ -13,6 +13,8 @@ EstyJs.Display = function (opts) {
     var imageData = null;
     var buf = null;
 
+	var bigEndian = false;
+	
     var buf8 = null;
     var data = null;
 
@@ -51,8 +53,12 @@ EstyJs.Display = function (opts) {
 			var b = ((c & 0x7) << 1);//|1;
 			var g = ((c & 0x70) <<1) >> 4;// | 0x10;
 			var r = ((c & 0x700)<<1) >> 8;// | 0x100;
-			
-			paletteConverted[i] = (((r << 4) | r)) | (((g << 4) | g) << 8) | (((b << 4) | b) << 16) | 0xff000000;
+
+			if (bigEndian) {
+				paletteConverted[i] = (((r << 4) | r) <<24) | (((g << 4) | g) << 16) | (((b << 4) | b) << 8) | 0x000000ff;
+			} else {
+				paletteConverted[i] = (((r << 4) | r)) | (((g << 4) | g) << 8) | (((b << 4) | b) << 16) | 0xff000000;
+			}
 		}
 	}
 
@@ -273,442 +279,409 @@ EstyJs.Display = function (opts) {
 
     function standardScreenDraw() {
 
-        var scrnAddr;
+var scrnAddr;
 
         var colour;
         var m;
 
+		var m1,m2,m3,m4;
+		
         var x = 0;
         var y = self.beamRow;
 
-/*
-        switch (sheila.screenMode) {
+		convertPalette();
+
+        switch (screenMode) {
             case 0:
-                for (x = 0; x < 640; x += 8) {
-                    scrnAddr = screenRowStart + (x & 0xfff8);
-                    if (scrnAddr > 32767) scrnAddr = scrnAddr - 0x5000;
-                    m = memory.readByte(scrnAddr, true);
+				//lo-res
+				scrnAddr = screenRowStart;
+                for (x = 0; x < 20; x++) {
+                    m1 = memory.readWord(scrnAddr, true);			
+					m2 = memory.readWord(scrnAddr+2, true);			
+                    m3 = memory.readWord(scrnAddr+4, true);			
+					m4 = memory.readWord(scrnAddr+6, true);			
+					scrnAddr+=8;
+					
+					colour = paletteConverted[((m1 & 0x8000) >> 15) | ((m2 & 0x8000) >> 14) | ((m3 & 0x8000) >> 13) | ((m4 & 0x8000) >> 12)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
 
-                    colour = colours[sheila.palette[(m & 128) >> 7]];
+					colour = paletteConverted[((m1 & 0x4000) >> 14) | ((m2 & 0x4000) >> 13) | ((m3 & 0x4000) >> 12) | ((m4 & 0x4000) >> 11)];			
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 64) >> 6]];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 32) >> 5]];
+
+					colour = paletteConverted[((m1 & 0x2000) >> 13) | ((m2 & 0x2000) >> 12) | ((m3 & 0x2000) >> 11) | ((m4 & 0x2000) >> 10)];			
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 16) >> 4]];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 8) >> 3]];
+
+					colour = paletteConverted[((m1 & 0x1000) >> 12) | ((m2 & 0x1000) >> 11) | ((m3 & 0x1000) >> 10) | ((m4 & 0x1000) >> 9)];			
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 4) >> 2]];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 2) >> 1]];
+
+					colour = paletteConverted[((m1 & 0x800) >> 11) | ((m2 & 0x800) >> 10) | ((m3 & 0x800) >> 9) | ((m4 & 0x800) >> 8)];			
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 1)]];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                }
-                break;
+
+					colour = paletteConverted[((m1 & 0x400) >> 10) | ((m2 & 0x400) >> 9) | ((m3 & 0x400) >> 8) | ((m4 & 0x400) >> 7)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x200) >> 9) | ((m2 & 0x200) >> 8) | ((m3 & 0x200) >> 7) | ((m4 & 0x200) >> 6)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x100) >> 8) | ((m2 & 0x100) >> 7) | ((m3 & 0x100) >> 6) | ((m4 & 0x100) >> 5)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x80) >> 7) | ((m2 & 0x80) >> 6) | ((m3 & 0x80) >> 5) | ((m4 & 0x80) >> 4)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x40) >> 6) | ((m2 & 0x40) >> 5) | ((m3 & 0x40) >> 4) | ((m4 & 0x40) >> 3)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x20) >> 5) | ((m2 & 0x20) >> 4) | ((m3 & 0x20) >> 3 ) | ((m4 & 0x20) >> 2)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x10) >> 4) | ((m2 & 0x10) >> 3) | ((m3 & 0x10) >> 2) | ((m4 & 0x10) >> 1)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x8) >> 3) | ((m2 & 0x8) >> 2) | ((m3 & 0x8) >> 1) | ((m4 & 0x8))];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x4) >> 2) | ((m2 & 0x4) >> 1) | ((m3 & 0x4) ) | ((m4 & 0x4) << 1)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x2) >> 1) | ((m2 & 0x2) ) | ((m3 & 0x2) << 1) | ((m4 & 0x2) << 2)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x1) ) | ((m2 & 0x1) << 1) | ((m3 & 0x1) << 2) | ((m4 & 0x1) << 3)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					
+					}				
+			    pixelIndex += 2560;
+               break;
             case 1:
-                for (x = 0; x < 320; x += 4) {
-                    scrnAddr = screenRowStart + ((x & 0xfffc) << 1);
-                    if (scrnAddr > 32767) scrnAddr = scrnAddr - 0x5000;
-                    m = memory.readByte(scrnAddr, true);
+				//med res
+				scrnAddr = screenRowStart;
+                for (x = 0; x < 40; x++) {
+                    m1 = memory.readWord(scrnAddr, true);			
+					m2 = memory.readWord(scrnAddr+2, true);			
+					scrnAddr+=4;
+					
+					colour = paletteConverted[((m1 & 0x8000) >> 15) | ((m2 & 0x8000) >> 14)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
 
-                    colour = colours[sheila.palette[((m & 128) >> 6) | ((m & 8) >> 3)]];
+					colour = paletteConverted[((m1 & 0x4000) >> 14) | ((m2 & 0x4000) >> 13)];			
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x2000) >> 13) | ((m2 & 0x2000) >> 12)];			
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[((m & 64) >> 5) | ((m & 4) >> 2)]];
+
+					colour = paletteConverted[((m1 & 0x1000) >> 12) | ((m2 & 0x1000) >> 11)];			
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x800) >> 11) | ((m2 & 0x800) >> 10)];			
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[((m & 32) >> 4) | ((m & 2) >> 1)]];
+
+					colour = paletteConverted[((m1 & 0x400) >> 10) | ((m2 & 0x400) >> 9)];			
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x200) >> 9) | ((m2 & 0x200) >> 8)];			
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[((m & 16) >> 3) | ((m & 1))]];
+
+					colour = paletteConverted[((m1 & 0x100) >> 8) | ((m2 & 0x100) >> 7)];			
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x80) >> 7) | ((m2 & 0x80) >> 6)];			
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                }
-                break;
+
+					colour = paletteConverted[((m1 & 0x40) >> 6) | ((m2 & 0x40) >> 5)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x20) >> 5) | ((m2 & 0x20) >> 4)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x10) >> 4) | ((m2 & 0x10) >> 3)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x8) >> 3) | ((m2 & 0x8) >> 2)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x4) >> 2) | ((m2 & 0x4) >> 1)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x2) >> 1) | ((m2 & 0x2) )];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					colour = paletteConverted[((m1 & 0x1)) | ((m2 & 0x1) << 1)];			
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
+
+					
+					}				
+				pixelIndex += 2560;				
+               break;
             case 2:
-                for (x = 0; x < 160; x += 2) {
-                    scrnAddr = screenRowStart + ((x & 0xfffe) << 2);
-                    if (scrnAddr > 32767) scrnAddr = scrnAddr - 0x5000;
-                    m = memory.readByte(scrnAddr, true);
-
-                    colour = colours[sheila.palette[((m & 128) >> 4) | ((m & 32) >> 3) | ((m & 8) >> 2) | ((m & 2) >> 1)]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
+				//high res
+				scrnAddr = screenRowStart;
+                for (x = 0; x < 80; x++) {
+                    m = memory.readByte(scrnAddr++, true);			
+                    colour = paletteConverted[(m&0x80)>>7];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = colours[sheila.palette[((m & 64) >> 3) | ((m & 16) >> 2) | ((m & 4) >> 1) | ((m & 1))]];
+                    colour = paletteConverted[(m&0x40)>>6];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                }
-                break;
 
+                    colour = paletteConverted[(m&0x20)>>5];
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
 
-            case 3:
-                for (x = 0; x < 640; x += 8) {
-                    scrnAddr = screenRowStart + (x & 0xfff8);
-                    if (scrnAddr > 32767) scrnAddr = scrnAddr - 0x5000;
-                    m = memory.readByte(scrnAddr, true);
+                    colour = paletteConverted[(m&0x10)>>4];
+                    data[pixelIndex++] = colour & 0xff;
+                    data[pixelIndex++] = (colour & 0xff00) >> 8;
+                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
+                    data[pixelIndex++] = 255;
 
-                    colour = colours[sheila.palette[(m & 128) >> 7]];
+                    colour = paletteConverted[(m&0x8)>>3];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 64) >> 6]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 32) >> 5]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 16) >> 4]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 8) >> 3]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 4) >> 2]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 2) >> 1]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 1)]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                }
-                break;
-            case 4:
-                for (x = 0; x < 320; x += 8) {
-                    scrnAddr = screenRowStart + (x & 0xfff8);
-                    if (scrnAddr > 32767) scrnAddr = scrnAddr - 0x2800;
-                    m = memory.readByte(scrnAddr, true);
-                    
-                    colour = colours[sheila.palette[(m & 128) >> 7]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 64) >> 6]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 32) >> 5]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 16) >> 4]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 8) >> 3]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 4) >> 2]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 2) >> 1]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 1)]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    
-                }
-                break;
-            case 5:
-                for (x = 0; x < 160; x += 4) {
-                    scrnAddr = screenRowStart + ((x & 0xfffc) << 1);
-                    if (scrnAddr > 32767) scrnAddr = scrnAddr - 0x2800;
-                    m = memory.readByte(scrnAddr, true);
 
-                    colour = colours[sheila.palette[((m & 128) >> 6) | ((m & 8) >> 3)]];
+                    colour = paletteConverted[(m&0x4)>>2];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[((m & 64) >> 5) | ((m & 4) >> 2)]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[((m & 32) >> 4) | ((m & 2) >> 1)]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[((m & 16) >> 3) | (m & 1)]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                }
-                break;
-            case 6:
-            case 7:
-                for (x = 0; x < 320; x += 8) {
-                    scrnAddr = screenRowStart + (x & 0xfff8);
-                    if (scrnAddr > 32767) scrnAddr = scrnAddr - 0x2000;
-                    m = memory.readByte(scrnAddr, true);
 
-                    colour = colours[sheila.palette[(m & 128) >> 7]];
+                    colour = paletteConverted[(m&0x2)>>1];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
+
+                    colour = paletteConverted[(m&0x1)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 64) >> 6]];
+                }				
+                for (x = 0; x < 80; x++) {
+                    m = memory.readByte(scrnAddr++, true);			
+                    colour = paletteConverted[(m&0x80)>>7];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
+
+                    colour = paletteConverted[(m&0x40)>>6];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 32) >> 5]];
+
+                    colour = paletteConverted[(m&0x20)>>5];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
+
+                    colour = paletteConverted[(m&0x10)>>4];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 16) >> 4]];
+
+                    colour = paletteConverted[(m&0x8)>>3];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
+
+                    colour = paletteConverted[(m&0x4)>>2];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 8) >> 3]];
+
+                    colour = paletteConverted[(m&0x2)>>1];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
+
+                    colour = paletteConverted[(m&0x1)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 4) >> 2]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 2) >> 1]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    colour = colours[sheila.palette[(m & 1)]];
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                    data[pixelIndex++] = colour & 0xff;
-                    data[pixelIndex++] = (colour & 0xff00) >> 8;
-                    data[pixelIndex++] = (colour & 0xff0000) >> 16;
-                    data[pixelIndex++] = 255;
-                }
-                break;
+                }				
+				break;
+
             default:
                 break;
-        }*/
+		}        
     }
 
     self.startFrame = function () {
@@ -724,7 +697,15 @@ EstyJs.Display = function (opts) {
             buf = new ArrayBuffer(imageData.data.length);
             buf8 = new Uint8Array(buf);
             data = new Uint32Array(buf);
-        }
+
+            data[0] = 0x01020304;
+            if (buf8[0] = 0x04) {
+                bigEndian=false;
+            } else {
+                bigEndian=true;
+            }
+
+			}
         else {
             data = imageData.data;
         }
@@ -759,7 +740,6 @@ EstyJs.Display = function (opts) {
         }
         else {
             standardScreenDraw();
-            pixelIndex += 2560;
         }
 
 
