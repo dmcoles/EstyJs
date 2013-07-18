@@ -737,7 +737,7 @@ EstyJs.Display = function (opts) {
     }
 
     self.startRow = function () {
-        if (self.beamRow < 63 | self.beamRow > 263) {
+        if (self.beamRow <63 | self.beamRow >=263) {
             self.displayOn = false;
             return;
         }
@@ -749,7 +749,7 @@ EstyJs.Display = function (opts) {
 
     self.processRow = function () {
 
-        if (self.beamRow <63 |  self.beamRow>263) {
+        if (self.beamRow <63 |  self.beamRow>=263) {
             self.beamRow++;
             return;
         }

@@ -44,10 +44,10 @@
 				Currently there are many things not emulated:
 				<ol>
 					<li>Floppies</li>
-					<li>Sound</li>
 					<li>Partial keyboard/mouse/joystick</li>
-					<li>Partial timer support</li>
-				</ol></br>
+					<li>timer pulse width & high accuracy < 1 scanline </li>
+				</ol>
+                <br/>
 				Hints:<br/>
 				try not to move the mouse during the boot process as it will stop the mouse working<br/>
 				<br/>Joystick 1 is emulated using cursor keys and ctrl.
@@ -70,9 +70,9 @@
 			<button onclick="reset()" id="btnReset">Reset</button>
 			<button onclick="pauseResume()" id="btnPause">Pause</button>
 			<button onclick="soundToggle()" id="btnSound">Sound off</button>
-			<button onclick="document.getElementById('selectedFile').click();" style="display: none;"  id="btnBrowse">Browse</button>
+			<button onclick="document.getElementById('selectedFile').click();"  id="btnBrowse">Browse</button>
 			<button onclick="openFile()" style="display: none;" id="btnOpen">Open</button>
-			<input type="file" id="selectedFile" style="display: none;" />
+			<input type="file" id="selectedFile" accept=".sts" style="display: none;" /><br/>
 			<button onclick="openFile2()" id="btnTest">Test</button>
 			<button onclick="openFile3()" id="btnTest">Test2</button>
 			<button onclick="openFile4()" id="btnTest">Test3</button>			

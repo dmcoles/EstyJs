@@ -371,7 +371,7 @@ EstyJs.mfp = function(opts) {
 	self.startRow = function() {
 		
 		//event count or pulse width
-		if (timerAcontrol >=8 && display.displayOn) {
+		/*if (timerAcontrol >=8 && display.displayOn) {
 			timerAcntr2++;
 			if (timerAcntr2>=timerAdiv) {
 				timerAcntr2 = 0;
@@ -405,6 +405,7 @@ EstyJs.mfp = function(opts) {
 				}
 			}
 		}
+		*/
 		
 		if (timerAcontrol >0 && timerAcontrol<8) {
 			timerAcntr2+=512;
@@ -483,6 +484,45 @@ EstyJs.mfp = function(opts) {
 		}
 	}
 
+	self.endRow = function() {
+		//event count or pulse width
+		if (timerAcontrol >=8 && display.displayOn) {
+			timerAcntr2++;
+			if (timerAcntr2>=timerAdiv) {
+				timerAcntr2 = 0;
+				timerAcntr = (timerAcntr-1)&0xff;
+			
+				//do event when timer A reaches 0
+				if (timerAcntr==0) {
+					timerAcntr = timerAdata;
+					
+					if ((interruptEnableA & 32)!=0) {
+						self.interruptRequest(13);
+					}
+				}
+			}
+		}
+
+		//event count or pulse width
+		if (timerBcontrol >=8 && display.displayOn) {
+			timerBcntr2++;
+			if (timerBcntr2>=timerBdiv) {
+				timerBcntr2 = 0;
+				timerBcntr = (timerBcntr-1)&0xff;
+			
+				//do event when timer B reaches 0
+				if (timerBcntr==0) {
+					timerBcntr = timerBdata;
+					
+					if ((interruptEnableA & 1)!=0) {
+						self.interruptRequest(8);
+					}
+				}
+			}
+		}
+		
+	}
+	
 	self.setDisplay = function(d) {
 		display = d;
 	}
@@ -564,8 +604,25 @@ EstyJs.mfp = function(opts) {
 		//	self.writeData(0xfffa01+(i<<1),regs[i]);
         //}
 
+        self.writeData(0xfffa01, regs[0]);
+        self.writeData(0xfffa03, regs[1]);
+        self.writeData(0xfffa05, regs[2]);
         self.writeData(0xfffa07, regs[3]);
         self.writeData(0xfffa09, regs[4]);
+        self.writeData(0xfffa0b, regs[5]);
+        self.writeData(0xfffa0d, regs[6]);
+        self.writeData(0xfffa0f, regs[7]);
+        self.writeData(0xfffa11, regs[8]);
+        self.writeData(0xfffa13, regs[9]);
+        self.writeData(0xfffa15, regs[10]);
+        //self.writeData(0xfffa17, regs[11]);
+        self.writeData(0xfffa19, regs[12]);
+        self.writeData(0xfffa1b, regs[13]);
+        self.writeData(0xfffa1d, regs[14]);
+        self.writeData(0xfffa1f, regs[15]);
+        self.writeData(0xfffa21, regs[16]);
+        self.writeData(0xfffa23, regs[17]);
+        self.writeData(0xfffa25, regs[18]);
 
 
 	}

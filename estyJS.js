@@ -82,6 +82,7 @@ function EstyJs(output) {
 	mfp.setDisplay(display);
 	io.setDisplay(display);	
 	processor.setup();
+	sound.setProcessor(processor);
 	memory.setProcessor(processor);
 	
 	setTimeout(runframe, 20);
@@ -108,6 +109,7 @@ function EstyJs(output) {
 					display.processRow();
 					sound.processRow();
 					keyboard.processRow();
+					mfp.endRow();
 				}
 				sound.endFrame(soundEnabled);
 				frameCount++;
@@ -121,6 +123,7 @@ function EstyJs(output) {
 	self.reset = function(){
 		memory.reset();
 		display.reset();
+		sound.reset();
 		processor.reset(0);
 
 	};

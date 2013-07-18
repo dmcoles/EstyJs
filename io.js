@@ -141,6 +141,12 @@ EstyJs.io = function(opts) {
 			return;
 		}
 		
+		if (addr == 0xff8804) {
+			//PSG register write
+			sound.writeRegister2(5,val);
+			return;
+		}
+
 		if ((addr & 0xFFFA00) == 0xFFFA00)
 		{
 			mfp.writeData(addr,val);
@@ -168,6 +174,11 @@ EstyJs.io = function(opts) {
 		if ((addr&0xFF8600)==0xFF8600) {
 			//fdc command register
 			return fdc.processCommand2(addr,val);
+		}
+
+		if (addr>=0xFF8800 && addr<=0xFF8808) {
+			//psg
+			return;
 		}
 
 		
@@ -208,7 +219,7 @@ EstyJs.io = function(opts) {
 		
 		if (addr == 0xFF820A ) {
 			//Sync mode	
-			return display.syncMode;
+			return display.getSyncMode;
 		}
 		
 		if (addr>=0xFF8240 & addr<0xFF8260) {
