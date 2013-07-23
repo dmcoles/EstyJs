@@ -38,6 +38,8 @@
 EstyJs.Sound = function (opts) {
     var self = {};
 
+    var fdc = opts.fdc;
+
     var clock = 2000000;
 
     var samplesPerFrame = 882;
@@ -177,7 +179,7 @@ EstyJs.Sound = function (opts) {
         AY8912_Holding = 0;
         AY8912_Attack = 0;
 
-        for (var i = 0; i <= AY_PORTA; i++) {
+        for (var i = 0; i <= AY_PORTB; i++) {
             AYWriteReg(i, 0);     //* AYWriteReg() uses the timer system; we cannot
         }                    //* call it at this time because the timer system
         //* has not been initialized.
@@ -243,6 +245,9 @@ EstyJs.Sound = function (opts) {
         var old;
 
         AY8912_Regs[r] = v;
+
+        //on ST drive select is mapped to PSG register 14
+        if (r == AY_PORTA) fdc.selectDrive((~v) & 7);
 
         //'/* A note about the period of tones, noise and envelope: for speed reasons,*/
         //'/* we count down from the period to 0, but careful studies of the chip     */

@@ -5253,6 +5253,7 @@ EstyJs.Processor = function(opts) {
 			//AMIGA.events.cycle(cpu_cycles);
 
 			var op = nextOPCode();	
+			var lastPc = regs.pc;
 			try {
 				var cycles = iTab[op].f(iTab[op].p);
 				cpu_cycles = cycles[0] * cpu_cycle_unit;	

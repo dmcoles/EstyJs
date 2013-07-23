@@ -29,23 +29,31 @@ function EstyJs(output) {
 
 	var bug = EstyJs.bug({
 	});
-	
-	var fdc = EstyJs.fdc({
+
+	var fileManager = EstyJs.fileManager({
 	});
+
 	
 	var mfp = EstyJs.mfp( {
 		bug: bug
 	});
 
-	var keyboard = EstyJs.Keyboard({
+    var keyboard = EstyJs.Keyboard({
 		mfp: mfp,
 		control: output
 	});
 
-	var sound = EstyJs.Sound({
-	});
-	
-	var io = EstyJs.io({
+    var fdc = EstyJs.fdc({
+        bug: bug,
+        fileManager: fileManager,
+        mfp: mfp
+    });
+    
+    var sound = EstyJs.Sound({
+        fdc: fdc
+    });
+
+    var io = EstyJs.io({
 		sound : sound,
 		bug: bug,
 		mfp: mfp,
@@ -58,6 +66,7 @@ function EstyJs(output) {
 		bug: bug
 	});
 
+
 	var processor = EstyJs.Processor({
 		memory : memory,
 		mfp : mfp,
@@ -67,6 +76,7 @@ function EstyJs(output) {
 	var display = EstyJs.Display({
 		memory : memory,
 		io : io,
+		fdc : fdc,
 		output: output
 	});
 	
@@ -76,10 +86,12 @@ function EstyJs(output) {
 		display: display,
 		keyboard: keyboard,
 		mfp: mfp,
-		processor: processor
+		processor: processor,
+        fileManager : fileManager
 	});
 
-	mfp.setDisplay(display);
+    mfp.setDisplay(display);
+    fdc.setMemory(memory);
 	io.setDisplay(display);	
 	processor.setup();
 	sound.setProcessor(processor);
@@ -107,6 +119,7 @@ function EstyJs(output) {
 					processor.hblInterrupt();
 					processor.runCode();
 					display.processRow();
+					fdc.processRow();
 					sound.processRow();
 					keyboard.processRow();
 					mfp.endRow();
@@ -137,12 +150,16 @@ function EstyJs(output) {
 		soundEnabled = !soundEnabled;
 		return soundEnabled;
 	}
-	
-	self.openFile = function(file) {
+
+    self.openSnapshotFile = function (file) {           
 		snapshot.loadSnapshot(file); 
 	}
 
-	self.setJoystick = function(joyEnabled) {
+    self.openFloppyFile = function (drive,file) {
+        fdc.loadFile(drive,file);
+    }
+
+    self.setJoystick = function (joyEnabled) {
 		keyboard.KeypadJoystick = joyEnabled;
 	}
 	

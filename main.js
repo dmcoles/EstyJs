@@ -20,7 +20,14 @@ function pauseResume() {
 function fileSelected(evt) {
 	var files = evt.target.files;
 	if (files.length>0) {
-		estyjs.openFile(files[0]);
+		if (files[0].name.lastIndexOf('.')!=-1) {
+			var ext = files[0].name.substr(files[0].name.lastIndexOf('.')).toLowerCase();
+			if (ext=='.sts') {
+				estyjs.openSnapshotFile(files[0]);
+			} else if (ext=='.st') {
+				estyjs.openFloppyFile('A',files[0]);
+			}
+		}
 	}
 	
 }
@@ -36,15 +43,15 @@ function soundToggle() {
 }
 
 function openFile2() {
-	estyjs.openFile('rick_dangerous.sts');
+    estyjs.openSnapshotFile('rick_dangerous.sts');
 }
 
 function openFile3() {
-	estyjs.openFile('dmaster.sts');
+	estyjs.openSnapshotFile('dmaster.sts');
 }
 
 function openFile4() {
-	estyjs.openFile('speedball2.sts');
+    estyjs.openSnapshotFile('speedball2.sts');
 }
 
 function changeJoystick() {

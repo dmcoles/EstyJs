@@ -81,6 +81,8 @@ EstyJs.Memory = function(opts) {
 			if (m==undefined) processor.memoryError(addr);
 			return m;
 		}
+
+		return 0;
 		
 	}
 

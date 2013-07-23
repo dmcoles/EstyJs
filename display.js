@@ -6,7 +6,8 @@ EstyJs.Display = function (opts) {
 
     var memory = opts.memory;
     var output = opts.output;
-
+	var fdc = opts.fdc;
+	
     var element = document.getElementById(output);
     var context = element.getContext("2d");
 
@@ -686,9 +687,22 @@ var scrnAddr;
 
     self.startFrame = function () {
 
+	
         if (imageData != null) {
             if (buf8 != null) imageData.data.set(buf8);
             context.putImageData(imageData, 0, 0); // at coords 0,0
+
+			var text = fdc.getDisplayData();
+
+			context.fillStyle = "Black";
+			context.font = "bold 16px Arial";
+			if (text.length>0) {
+				context.fillText(text[0], 600, 380);			
+			}
+			if (text.length>1) {
+				context.fillText(text[1], 600, 395);			
+			}
+			
         }
 
         imageData = context.createImageData(640, 512);
