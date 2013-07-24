@@ -217,6 +217,8 @@ EstyJs.io = function (opts) {
             return;
         }
 
+		if (addr==0xff8801 | addr==0xff8803) return;
+		
         if (addr == 0xff8802) {
             //PSG register write
             sound.writeRegister(val);

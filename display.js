@@ -694,7 +694,7 @@ var scrnAddr;
 
 			var text = fdc.getDisplayData();
 
-			context.fillStyle = "Black";
+			context.fillStyle = "White";
 			context.font = "bold 16px Arial";
 			if (text.length>0) {
 				context.fillText(text[0], 600, 380);			

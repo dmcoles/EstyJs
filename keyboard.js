@@ -190,6 +190,8 @@ EstyJs.Keyboard = function (opts) {
                 rightDown = true;
                 break;
         }
+		evt.preventDefault();
+		return true;
 
     }
 
@@ -197,6 +199,7 @@ EstyJs.Keyboard = function (opts) {
         switch (evt.button) {
             case 0:
                 evt.stopPropagation();
+				
                 leftDown = false;
                 break;
             case 2:
@@ -204,6 +207,8 @@ EstyJs.Keyboard = function (opts) {
                 rightDown = false;
                 break;
         }
+		evt.preventDefault();
+		return true;
     }
 
     function keyDown(evt) {
@@ -328,6 +333,7 @@ EstyJs.Keyboard = function (opts) {
 
     self.readData = function () {
         interrupt = false;
+		mfp.setAciaGpio();
         rxRegisterFull = false;
         return readData;
     }
@@ -348,6 +354,40 @@ EstyJs.Keyboard = function (opts) {
 
 
         }
+
+if (dataOut.length > 0 && !rxRegisterFull) {
+            readData = (dataOut.shift()) & 0xff;
+            rxRegisterFull = true; //set receive data register full
+        }
+
+        //trigger interrupt
+        if ((control & 0x80) && (rxRegisterFull)) {
+                interrupt = true;
+				mfp.clearAciaGpio();
+                mfp.interruptRequest(6);
+        }
+
+
+        if (mouseMode == 'R' && !resetTime) {
+            var xd = (mouseX - oldMouseX) >> 1;
+            var yd = (mouseY - oldMouseY) >> 1;
+
+            if ((Math.abs(xd) > mouseXthreshold) || (Math.abs(yd) > mouseYthreshold) || oldLeftDown != leftDown || oldRightDown != rightDown) {
+                dataOut.push(0xf8 | (leftDown ? 2 : 0) | (rightDown ? 1 : 0)); //mouse buttons
+                dataOut.push(xd);
+                if (invertY) {
+                    dataOut.push(-yd);
+                } else {
+                    dataOut.push(yd);
+                }
+
+                oldMouseX = mouseX;
+                oldMouseY = mouseY;
+                oldLeftDown = leftDown;
+                oldRightDown = rightDown;
+            }
+        }
+
         if (keyCommands.length > 0) {
 
             var keyCmd = keyCommands[0];
@@ -614,38 +654,7 @@ EstyJs.Keyboard = function (opts) {
             }
 
         }
-
-        if (dataOut.length > 0 && !rxRegisterFull) {
-            readData = (dataOut.shift()) & 0xff;
-            rxRegisterFull = true; //set receive data register full
-        }
-
-        //trigger interrupt
-        if ((control & 0x80) && (rxRegisterFull)) {
-                interrupt = true;
-                mfp.interruptRequest(6);
-        }
-
-
-        if (mouseMode == 'R' && !resetTime) {
-            var xd = (mouseX - oldMouseX) >> 1;
-            var yd = (mouseY - oldMouseY) >> 1;
-
-            if ((Math.abs(xd) > mouseXthreshold) || (Math.abs(yd) > mouseYthreshold) || oldLeftDown != leftDown || oldRightDown != rightDown) {
-                dataOut.push(0xf8 | (leftDown ? 2 : 0) | (rightDown ? 1 : 0)); //mouse buttons
-                dataOut.push(xd);
-                if (invertY) {
-                    dataOut.push(-yd);
-                } else {
-                    dataOut.push(yd);
-                }
-
-                oldMouseX = mouseX;
-                oldMouseY = mouseY;
-                oldLeftDown = leftDown;
-                oldRightDown = rightDown;
-            }
-        }
+        
     }
 
     document.onkeydown = keyDown;
@@ -654,6 +663,9 @@ EstyJs.Keyboard = function (opts) {
     document.onmousemove = mouseMove;
     document.getElementById(htmlControl).onmousedown = mouseDown;
     document.getElementById(htmlControl).onmouseup = mouseUp;
+	document.getElementById(htmlControl).oncontextmenu = function() {
+		return false;
+	}
 
     self.setSnapshotRegs = function (regs) {
         mouseMode = regs.mouseMode;

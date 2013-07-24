@@ -187,7 +187,7 @@ EstyJs.Processor = function(opts) {
 		return r > 0xffffffff ? r - 0x100000000 : r;
 	}
 	function addAuto(a, b, z) {
-		var r = a + b;
+		var r = (a + b) & 0xffffffff;
 		switch (z) {
 			case 1: return r > 0xff ? r - 0x100 : r;
 			case 2: return r > 0xffff ? r - 0x10000 : r;
@@ -201,7 +201,7 @@ EstyJs.Processor = function(opts) {
 		return r < 0 ? r + 0x100000000 : r;
 	}
 	function subAuto(a, b, z) {
-		var r = a - b;
+		var r = (a - b) & 0xffffffff;
 		switch (z) {
 			case 1: return r < 0 ? r + 0x100 : r;
 			case 2: return r < 0 ? r + 0x10000 : r;

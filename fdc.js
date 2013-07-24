@@ -49,9 +49,6 @@ EstyJs.fdc = function (opts) {
 		var result = new Object();
 
 		var floppyData = null;
-		var sides = 2;
-		var sectors = 9;
-
 		
         switch (selectedDrive) {
             case 'A':
@@ -69,7 +66,7 @@ EstyJs.fdc = function (opts) {
 			result.sides = 1;
 		}
 		
-		result.sectors = Math.floor(floppyData.length / 80 / sides / 512);
+		result.sectors = Math.floor(floppyData.length / 80 / result.sides / 512);
 	
 		return result;
 	}

@@ -284,7 +284,7 @@ EstyJs.mfp = function (opts) {
     self.readData = function (addr, val) {
 
         if (addr == 0xFFFA01) {
-            return (gpio & 0x20) | (((interruptInServiceA | interruptInServiceB) != 0) ? 16 : 0) | (monoMonitor ? 0 : 0x80);
+            return (gpio & 0x7f) | (monoMonitor ? 0 : 0x80);
         }
 
         if (addr == 0xFFFA03) {
@@ -587,7 +587,15 @@ EstyJs.mfp = function (opts) {
         gpio &= 223;
     }
 
+    self.setAciaGpio = function () {
+        gpio |= 16;
+    }
 
+    self.clearAciaGpio = function () {
+        gpio &= 239;
+    }
+
+	
     self.getInterrupt = function () {
         var x = 0x80;
         var n = 15;
