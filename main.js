@@ -57,3 +57,7 @@ function openFile4() {
 function changeJoystick() {
 	estyjs.setJoystick($('#joystick').prop('checked'));
 }
+
+function changeRamSize() {
+    estyjs.setMemory($('#ram').prop('checked'));
+}

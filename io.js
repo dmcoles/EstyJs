@@ -87,8 +87,21 @@ EstyJs.io = function (opts) {
     var dmaModeControl = 0;
     var dmaAddr = 0;
 
-    var memConfig = 4; //512k ram present only
+    var memConfig = 5; //2 banks of 512k ram present only
+    //var memConfig = 4; //1 banks of 512k ram present only
 
+    self.setRamBanks = function (bankCount) {
+        switch (bankCount) {
+            case 1:
+                memConfig = 4;
+                break;
+            case 2:
+                memConfig = 5;
+                break;
+            default:
+                memConfig = 4;
+        }
+    }
 
     self.reset = function () {
 
@@ -217,8 +230,8 @@ EstyJs.io = function (opts) {
             return;
         }
 
-		if (addr==0xff8801 | addr==0xff8803) return;
-		
+        if (addr == 0xff8801 | addr == 0xff8803) return;
+
         if (addr == 0xff8802) {
             //PSG register write
             sound.writeRegister(val);
@@ -249,8 +262,8 @@ EstyJs.io = function (opts) {
             return;
         }
 
-		if ((addr & 1) ==0) return;
-		
+        if ((addr & 1) == 0) return;
+
         bug.say(sprintf('invalid io write $%06x', addr));
     }
 
@@ -263,22 +276,22 @@ EstyJs.io = function (opts) {
 
         if (addr == 0xFF8201) {
             //Video base high			
-            return (display.getDisplayStart() & 0xff0000) >> 16;
+            return (display.getDisplayStart() & 0xff0000) >>> 16;
         }
 
         if (addr == 0xFF8203) {
             //Video base Med			
-            return (display.getDisplayStart() & 0x00ff00) >> 8;
+            return (display.getDisplayStart() & 0x00ff00) >>> 8;
         }
 
         if (addr == 0xFF8205) {
             //Video address counter high
-            return (display.getCurrentAddress() & 0xff0000) >> 16;
+            return (display.getCurrentAddress() & 0xff0000) >>> 16;
         }
 
         if (addr == 0xFF8207) {
             //Video address counter med 
-            return (display.getCurrentAddress() & 0x00ff00) >> 8;
+            return (display.getCurrentAddress() & 0x00ff00) >>> 8;
         }
 
         if (addr == 0xFF8209) {
@@ -288,7 +301,7 @@ EstyJs.io = function (opts) {
 
         if (addr == 0xFF820A) {
             //Sync mode	
-            return display.getSyncMode;
+            return display.getSyncMode();
         }
 
         if (addr >= 0xFF8240 & addr < 0xFF8260) {
@@ -307,7 +320,7 @@ EstyJs.io = function (opts) {
             switch (dmaModeControl & 15) {
                 case 0:
                     //status register
-					return fdc.getDriveStatus() & 0xff;
+                    return fdc.getDriveStatus() & 0xff;
                 case 2:
                     //track select
                     return fdc.getTrackNo() & 0xff;
@@ -317,7 +330,7 @@ EstyJs.io = function (opts) {
                 case 6:
                     //data register
                     return fdc.getDataRegister() & 0xff;
-                /*case 16:
+                    /*case 16:
                     //sector count select
                     return fdc.getSectorCount() & 0xff;*/
             }
@@ -333,12 +346,12 @@ EstyJs.io = function (opts) {
 
         if (addr == 0xff8609) {
             //dma address hi
-            return (fdc.getDmaAddr & 0xff0000) >> 16;
+            return (fdc.getDmaAddr & 0xff0000) >>> 16;
         }
 
         if (addr == 0xff860b) {
             //dma address mid
-            return (fdc.getDmaAddr & 0xff00) >> 8;
+            return (fdc.getDmaAddr & 0xff00) >>> 8;
         }
 
         if (addr == 0xff860d) {

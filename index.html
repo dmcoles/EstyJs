@@ -47,6 +47,7 @@
 					<li>writing to floppies</li>
 					<li>Partial keyboard/mouse/joystick</li>
 					<li>timer pulse width & high accuracy < 1 scanline </li>
+					<li>border effects</li>
 				</ol>
                 <br/>
 				Hints:<br/>
@@ -72,11 +73,14 @@
 			<button onclick="soundToggle()" id="btnSound">Sound off</button>
 			<button onclick="document.getElementById('selectedFile').click();"  id="btnBrowse">Browse</button>
 			<button onclick="openFile()" style="display: none;" id="btnOpen">Open</button>
-			<input type="file" id="selectedFile" accept=".sts,.st" style="display: none;" /><br/>
+			<input type="file" id="selectedFile" accept=".sts,.st" style="display: none;" />
+            <br/>
 			<button onclick="openFile2()" id="btnTest">Test</button>
-			<button onclick="openFile3()" id="btnTest">Test2</button>
-			<button onclick="openFile4()" id="btnTest">Test3</button>			
-			<input type="checkbox" id="joystick" checked="checked" onclick="changeJoystick()" >Joystick<br>			
+			<button onclick="openFile3()" id="btnTest2">Test2</button>
+			<button onclick="openFile4()" id="btnTest3">Test3</button>		
+            <br />
+			<input type="checkbox" id="joystick" checked="checked" onclick="changeJoystick()" >Joystick</input>
+            <input type="checkbox" id="ram" checked="checked" onclick="changeRamSize()" >1Meg</input>
 			
 			</div>
 		</div>

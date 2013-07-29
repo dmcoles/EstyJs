@@ -1,6 +1,5 @@
 // mfp emulation routines for EstyJS
 // written by Darren Coles
-
 EstyJs.mfp = function (opts) {
     var self = {};
 
@@ -202,7 +201,7 @@ EstyJs.mfp = function (opts) {
         if (addr == 0xFFFA1D) {
             //timer C + D control
             timerDcontrol = val & 7;
-            timerCcontrol = (val & 0x70) >> 4;
+            timerCcontrol = (val & 0x70) >>> 4;
 
             switch (timerCcontrol) {
                 case 0:
@@ -573,10 +572,7 @@ EstyJs.mfp = function (opts) {
     }
 
     self.doInterrupts = function (processor) {
-        if ((interruptPendingA & (~interruptInServiceA)) | (interruptPendingB & (~interruptInServiceB))) {
-            //if (interruptPendingA | interruptPendingB) & {
-            processor.mfpInterrupt();
-        }
+        return ((interruptPendingA & (~interruptInServiceA)) | (interruptPendingB & (~interruptInServiceB)));
     }
 
     self.setFloppyGpio = function () {
@@ -607,7 +603,7 @@ EstyJs.mfp = function (opts) {
                 return n;
             }
             n--;
-            x >>= 1;
+            x >>>= 1;
         }
         x = 0x80;
         while (x > 0) {
@@ -617,7 +613,7 @@ EstyJs.mfp = function (opts) {
                 return n;
             }
             n--;
-            x >>= 1;
+            x >>>= 1;
         }
 
         return undefined;

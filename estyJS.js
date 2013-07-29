@@ -162,6 +162,17 @@ function EstyJs(output) {
     self.setJoystick = function (joyEnabled) {
 		keyboard.KeypadJoystick = joyEnabled;
 	}
+
+	self.setMemory = function (mem1mb) {
+	    if (mem1mb) {
+	        memory.setMemSize(1024);
+	        io.setRamBanks(2);
+	    } else {
+	        memory.setMemSize(512);
+	        io.setRamBanks(1);
+	    }
+	    this.reset();
+	}
 	
 	return self;
 }
