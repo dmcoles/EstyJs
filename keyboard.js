@@ -27,6 +27,8 @@ EstyJs.Keyboard = function (opts) {
     //buttons action
     var mouseAction = 3;
 
+    var port0Mouse = true;
+
     //max x & y for absolute mouse reporting
     var mouseXmax = 0;
     var mouseYmax = 0;
@@ -233,7 +235,7 @@ EstyJs.Keyboard = function (opts) {
         //75 = left cursor, 77 = right cursor, 80 = down, 72 = up
         if (self.KeypadJoystick && (keyCode == 75 || keyCode == 77 || keyCode == 72 || keyCode == 80) || keyCode == 0x1D) {
             switch (keyCode) {
-                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire      
+                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire          
                 case 72:
                     //up
                     joystickPos |= 1;
@@ -257,7 +259,14 @@ EstyJs.Keyboard = function (opts) {
 
             }
 
-            if (joystickMode == 'E') {
+            //if port0mouse joystick sends right mouse click instead of fire
+            if ((keyCode == 0x1d) && (port0Mouse)) {
+                dataOut.push(0xf9 | (leftDown ? 2 : 0)); //mouse buttons
+                dataOut.push(0);
+                dataOut.push(0);
+            }
+
+            if (joystickMode == 'E' && (keyCode != 0x1d | !port0Mouse)) {
                 //fe = joystick 0, ff = joystick 1
                 dataOut.push(0xff);
                 dataOut.push(joystickPos)
@@ -281,7 +290,7 @@ EstyJs.Keyboard = function (opts) {
 
         if (self.KeypadJoystick && (keyCode == 75 || keyCode == 77 || keyCode == 72 || keyCode == 80) || keyCode == 0x1D) {
             switch (keyCode) {
-                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire      
+                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire          
                 case 72:
                     //up
                     joystickPos &= 0xff - 1;
@@ -305,7 +314,14 @@ EstyJs.Keyboard = function (opts) {
 
             }
 
-            if (joystickMode == 'E') {
+            //if port0mouse joystick sends right mouse click instead of fire
+            if ((keyCode == 0x1d) && (port0Mouse)) {
+                dataOut.push(0xf8 | (leftDown ? 2 : 0)); //mouse buttons
+                dataOut.push(0);
+                dataOut.push(0);
+            }
+
+            if (joystickMode == 'E' && (keyCode != 0x1d | !port0Mouse)) {
                 //fe = joystick 0, ff = joystick 1
                 dataOut.push(0xff);
                 dataOut.push(joystickPos)
@@ -363,7 +379,7 @@ EstyJs.Keyboard = function (opts) {
 
         }
 
-        if (dataOut.length > 0 && !rxRegisterFull) {
+        if (dataOut.length > 0 && !rxRegisterFull && !paused) {
             readData = (dataOut.shift()) & 0xff;
             rxRegisterFull = true; //set receive data register full
         }
@@ -376,7 +392,7 @@ EstyJs.Keyboard = function (opts) {
         }
 
 
-        if (mouseMode == 'R' && !resetTime) {
+        if (mouseMode == 'R' && !resetTime && port0Mouse) {
             var xd = (mouseX - oldMouseX) >> 1;
             var yd = (mouseY - oldMouseY) >> 1;
 
@@ -466,40 +482,46 @@ EstyJs.Keyboard = function (opts) {
 
                 case 0x07:
                     //mouse button action
+                    port0Mouse = true;
                     mouseAction = keyCommands.shift();
                     break;
                 case 0x08:
                     //relative mouse position reporting
+                    port0Mouse = true;
                     mouseMode = 'R';
                     break;
                 case 0x09:
                     //absolute mouse position reporting
                     mouseMode = 'A';
+                    port0Mouse = true;
                     mouseXmax = (keyCommands.shift() << 8) + keyCommands.shift();
                     mouseYmax = (keyCommands.shift() << 8) + keyCommands.shift();
                     break;
                 case 0x0A:
                     //keycode mouse poisition reporting
                     mouseMode = 'K';
+                    port0Mouse = true;
                     mouseXkey = keyCommands.shift();
                     mouseYkey = keyCommands.shift();
                     break;
                 case 0x0B:
                     //set threshold
+                    port0Mouse = true;
                     mouseXthreshold = keyCommands.shift();
                     mouseYthreshold = keyCommands.shift();
                     break;
                 case 0x0C:
                     //set scale
+                    port0Mouse = true;
                     mouseXscale = keyCommands.shift();
                     mouseYscale = keyCommands.shift();
                     break;
                 case 0x0D:
                     //interrogate mouse position
-
+                    port0Mouse = true;
                     dataOut.push(0xf7);
                     dataOut.push(0 | (!leftDown & mouseLButtonAbsWasDown ? 8 : 0) | (leftDown & !mouseLButtonAbsWasDown ? 4 : 0) | (!rightDown & mouseRButtonAbsWasDown ? 2 : 0) | (rightDown & !mouseRButtonAbsWasDown ? 1 : 0));
-                    dataOut.push(Math.floor((mouseX / $("#"+output).width() * mouseXmax) >> 8));
+                    dataOut.push(Math.floor((mouseX / $("#" + output).width() * mouseXmax) >> 8));
                     dataOut.push(Math.floor((mouseX / $("#" + output).width() * mouseXmax) & 0xff));
                     dataOut.push(Math.floor((mouseY / $("#" + output).height() * mouseYmax) >> 8));
                     dataOut.push(Math.floor((mouseY / $("#" + output).height() * mouseYmax) & 0xff));
@@ -511,6 +533,7 @@ EstyJs.Keyboard = function (opts) {
                 case 0x0E:
                     //set mouse position
                     //not yet implemented
+                    port0Mouse = true;
                     keyCommands.shift();
                     keyCommands.shift();
                     keyCommands.shift();
@@ -519,17 +542,21 @@ EstyJs.Keyboard = function (opts) {
                     break;
                 case 0x0F:
                     //set y at bottom
+                    port0Mouse = true;
                     invertY = true;
                     break;
                 case 0x10:
                     //set y at top
+                    port0Mouse = true;
                     invertY = false;
                     break;
                 case 0x11:
                     //resume
+                    // do nothing - any command unpauses
                     break;
                 case 0x12:
                     //disable mouse
+                    port0Mouse = false;
                     mouseMode = '';
                     break;
                 case 0x13:
@@ -538,6 +565,7 @@ EstyJs.Keyboard = function (opts) {
                     break;
                 case 0x14:
                     //set joystick event reporting
+                    port0Mouse = false;
                     joystickMode = 'E';
                     break;
                 case 0x15:
@@ -546,6 +574,7 @@ EstyJs.Keyboard = function (opts) {
                     break;
                 case 0x16:
                     //interrogate joystick
+                    port0Mouse = false;
                     dataOut.push(0xfd);
                     dataOut.push(0);
                     dataOut.push(joystickPos);
@@ -554,13 +583,16 @@ EstyJs.Keyboard = function (opts) {
                 case 0x17:
                     //set joystick monitoring
                     //not yet implemented
+                    port0Mouse = false;
                     break;
                 case 0x18:
                     //set fire button monitoring
                     //not yet implemented
+                    port0Mouse = false;
                     break;
                 case 0x19:
                     //set joystick keycode mode
+                    port0Mouse = false;
                     joystickMode = 'K';
                     keyCommands.shift();
                     keyCommands.shift();

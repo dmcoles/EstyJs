@@ -377,20 +377,17 @@ EstyJs.io = function (opts) {
 
         if (addr == 0xFFFC02) {
             //Keyboard ACIA data
-            var d = keyboard.readData();
-            //bug.say(sprintf('keyboard data read %04x',d));	
-            return d;
+            return keyboard.readData();
         }
 
         if (addr == 0xFFFC04) {
             //midi ACIA control
             return 2;
-
         }
 
-        if (addr == 0xFFFC04) {
+        if (addr == 0xFFFC06) {
             //midi ACIA data
-            return 0;
+            return 0x00;
         }
 
         if ((addr & 0xFF8A00) == 0xFF8A00) {
