@@ -60,6 +60,18 @@ EstyJs.fdc = function (opts) {
         }
 
         result.sectors = floppyData[24];
+		
+		if (result.sectors<9 | result.sectors>11 | (floppyData.length / result.sectors != Math.floor(floppyData.length / result.sectors))) {
+			if (floppyData.length / 9 == Math.floor(floppyData.length / 9)) {
+				result.sectors = 9; 
+			}
+			if (floppyData.length / 10 == Math.floor(floppyData.length / 10)) {
+				result.sectors = 10; 
+			}
+			if (floppyData.length / 11 == Math.floor(floppyData.length / 11)) {
+				result.sectors = 11; 
+			}
+		}
 
         result.tracks = floppyData.length / result.sectors / 512;
 
@@ -164,14 +176,14 @@ EstyJs.fdc = function (opts) {
         switch (commandNo & 0xf0) {
             case 0x0:
                 //track 0 seek
-                bug.say(sprintf("fdc process command - restore %s", selectedDrive));
+                //bug.say(sprintf("fdc process command - restore %s", selectedDrive));
                 commandCompleteTimer = 10;
                 //set busy flag
 
                 break;
             case 0x10:
                 //seek track				
-                bug.say(sprintf("fdc process command - seek %s - track %d", selectedDrive, dataReg));
+                //bug.say(sprintf("fdc process command - seek %s - track %d", selectedDrive, dataReg));
                 commandCompleteTimer = 2;
                 break;
             case 0x20:
@@ -204,7 +216,7 @@ EstyJs.fdc = function (opts) {
                 break;
             case 0x80:
                 commandCompleteTimer = 5;
-                bug.say(sprintf("fdc: command read sector - %s - side: %d - track: %d - sector: %d - sector count: %d - addr: $%06x", selectedDrive, driveSide, trackNo, sectorNo, sectorCount, dmaAddr));
+                //bug.say(sprintf("fdc: command read sector - %s - side: %d - track: %d - sector: %d - sector count: %d - addr: $%06x", selectedDrive, driveSide, trackNo, sectorNo, sectorCount, dmaAddr));
                 dmaStatusReg = 1 | (sectorCount ? 2 : 0);
                 mfp.setFloppyGpio();
                 break;
@@ -230,11 +242,11 @@ EstyJs.fdc = function (opts) {
                 bug.say("fdc process command - force interrupt");
                 //clear busyflag
                 writeDriveStatus(readDriveStatus() & 0xfe);
+                resetHblSinceLastCommand();
                 dmaStatusReg = 1;
                 if (commandCompleteTimer > 0) {
                     commandCompleteTimer = 0;
                     aborted = true;
-                    dmaStatusReg = 1;
                     mfp.setFloppyGpio();
                     return;
                 }
@@ -252,23 +264,24 @@ EstyJs.fdc = function (opts) {
         writeDriveStatus(0x81);
         dmaStatusReg = 1;
         mfp.setFloppyGpio();
+        aborted = false;
     }
 
     self.selectDrive = function (drive) {
         switch (drive & 6) {
             case 0:
                 //no drive selected
-                bug.say("deslect drives");
+                //bug.say("deslect drives");
                 selectedDrive = '';
                 break;
             case 2:
                 //drive A selected
-                bug.say("select drive A");
+                //bug.say("select drive A");
                 selectedDrive = 'A';
                 break;
             case 4:
                 //drive B selected
-                bug.say("select drive B");
+                //bug.say("select drive B");
                 selectedDrive = 'B';
                 break;
             case 6:
@@ -495,15 +508,19 @@ EstyJs.fdc = function (opts) {
                         break;
                     case 0xc0:
                         //read addr
+                        status = 0x80;
                         break;
                     case 0xd0:
                         //force interrupt
+                        status = 0x80;
                         break;
                     case 0xe0:
                         //read track
+                        status = 0xe0 | (currentTrack() ? 0 : 4) | (diskInserted() ? 0 : 16);
                         break;
                     case 0xf0:
                         //write track
+                        status = 0xc0; // | (currentTrack() ? 0 : 4) | (diskInserted() ? 0 : 16);
                         break;
 
 

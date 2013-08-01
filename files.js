@@ -1,4 +1,4 @@
-﻿//  file handling routines for EstyJs
+﻿ //  file handling routines for EstyJs
 // written by Darren Coles
 
 EstyJs.fileManager = function (opts) {

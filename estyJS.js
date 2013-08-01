@@ -6,7 +6,8 @@ function EstyJs(output) {
 	//var d = new Date();
 	//var startTime = d.getTime();
 	//var lastFrame = startTime;
-	var frameCount = 0;
+    var frameCount = 0;
+    var lastFrame = window.performance.now();
 
 	var running = true;
 	
@@ -77,6 +78,7 @@ function EstyJs(output) {
 		memory : memory,
 		io : io,
 		fdc : fdc,
+		processor : processor,
 		output: output
 	});
 	
@@ -106,7 +108,8 @@ function EstyJs(output) {
 				self.reset();
 				firstFrame = false;
 			}
-			var currTime = window.performance.now();
+            var currTime = window.performance.now();
+
 			//var reqFrames = (currTime - startTime)/20;		
 			//while (frameCount< reqFrames)
 			{

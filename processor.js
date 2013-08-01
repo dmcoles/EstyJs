@@ -39,7 +39,6 @@ EstyJs.Processor = function (opts) {
     var SPCFLAG_TRACE = false;
     var SPCFLAG_DOTRACE = false;
 
-
     var M_rdd = 1; /* Register Direct Data */
     var M_rda = 2; /* Register Direct Address */
     var M_ria = 3; /* Register Indirect Address */
@@ -5183,7 +5182,7 @@ EstyJs.Processor = function (opts) {
 
         if (nr == 6) {
             //mfp vectored interrupt
-            exception(mfp.getInterrupt() + 64);
+            exception(mfp.getInterrupt());
         } else {
             //auto vectored interrupts
             exception(nr + 24);
@@ -5343,6 +5342,10 @@ EstyJs.Processor = function (opts) {
 
         tot_cycles -= frameRowCycles;
     }
+	
+	self.getRowCycleCount = function() {
+		return tot_cycles;
+	}
 
     self.memoryError = function (addr) {
         //cause bus exception

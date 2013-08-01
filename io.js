@@ -346,17 +346,17 @@ EstyJs.io = function (opts) {
 
         if (addr == 0xff8609) {
             //dma address hi
-            return (fdc.getDmaAddr & 0xff0000) >>> 16;
+            return (fdc.getDmaAddr() & 0xff0000) >>> 16;
         }
 
         if (addr == 0xff860b) {
             //dma address mid
-            return (fdc.getDmaAddr & 0xff00) >>> 8;
+            return (fdc.getDmaAddr() & 0xff00) >>> 8;
         }
 
         if (addr == 0xff860d) {
             //dma address lo
-            return (fdc.getDmaAddr & 0xff);
+            return (fdc.getDmaAddr() & 0xff);
         }
 
         if (addr == 0xff8800) {
@@ -398,7 +398,7 @@ EstyJs.io = function (opts) {
         }
 
         bug.say(sprintf('invalid io read $%06x', addr));
-        return 0x00;
+        return 0xff;
     }
 
 

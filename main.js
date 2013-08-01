@@ -42,6 +42,14 @@ function soundToggle() {
 	}
 }
 
+function openFile(fname) {
+    estyjs.openFloppyFile('A', fname);
+}
+
+function openFileInDrive(fname,drive) {
+	estyjs.openFloppyFile(drive, fname);
+}
+
 function openFile2() {
     estyjs.openSnapshotFile('rick_dangerous.sts');
 }

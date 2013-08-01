@@ -10,11 +10,12 @@ EstyJs.mfp = function (opts) {
     var display = null;
     var bug = opts.bug;
 
-    var gpio = 0x20;
+    var gpio = 0xff;
 
     var monoMonitor = false;
 
     var autoInterruptEnd = false;
+    var vectorReg = 4;
 
     var timerAcontrol = 0;
     var timerBcontrol = 0;
@@ -55,8 +56,8 @@ EstyJs.mfp = function (opts) {
     self.writeData = function (addr, val) {
 
         if (addr == 0xFFFA01) {
-            gpio = val;
-			return;
+            gpio = val | 0x47;
+            return;
         }
 
         if (addr == 0xFFFA03) {
@@ -86,12 +87,14 @@ EstyJs.mfp = function (opts) {
         }
 
         if (addr == 0xFFFA0F) {
-            interruptInServiceA = val;
+            //see below
+            interruptInServiceA &= val;
             return;
         }
 
         if (addr == 0xFFFA11) {
-            interruptInServiceB = val;
+            //not at all sure about this being masked but it makes indy heat work
+            interruptInServiceB &= val;
             return;
         }
 
@@ -107,12 +110,19 @@ EstyJs.mfp = function (opts) {
 
         if (addr == 0xFFFA17) {
             autoInterruptEnd = ((val & 8) == 0);
+            vectorReg = (val & 0xf0) >> 4;
             return;
         }
 
 
         if (addr == 0xFFFA19) {
             //timer A control
+
+            //when timer is started load counter from data
+            if (timerAcontrol == 0 && val != 0) {
+                timerAcntr = timerAdata;
+            }
+
             timerAcontrol = val;
             switch (val) {
                 case 0:
@@ -149,6 +159,12 @@ EstyJs.mfp = function (opts) {
 
         if (addr == 0xFFFA1B) {
             //timer B control
+
+            //when timer is started load counter from data
+            if (timerBcontrol == 0 && val != 0) {
+                timerBcntr = timerBdata;
+            }
+
             timerBcontrol = val;
             switch (val) {
                 case 0:
@@ -182,19 +198,19 @@ EstyJs.mfp = function (opts) {
             return;
         }
 
-        if (addr == 0xFFFA1F) {
+        if ((addr == 0xFFFA1F)) {
             //timer A data
             timerAdata = val;
-            timerAcntr = val;
+            if (!timerAcontrol) timerAcntr = val;
             timerAcntr2 = 0;
             return;
         }
 
-        if (addr == 0xFFFA21) {
+        if ((addr == 0xFFFA21)) {
             //timer B data
-            timerBdata = val;
-            timerBcntr = val;
-            timerBcntr2 = 0;
+			timerBdata = val;
+			if (!timerBcontrol) timerBcntr = val;
+			timerBcntr2 = 0;
             return;
         }
 
@@ -324,7 +340,7 @@ EstyJs.mfp = function (opts) {
         }
 
         if (addr == 0xFFFA17) {
-            return autoInterruptEnd ? 8 : 0;
+            return (autoInterruptEnd ? 8 : 0) | (vectorReg << 4);
         }
 
 
@@ -531,38 +547,38 @@ EstyJs.mfp = function (opts) {
     self.interruptRequest = function (lvl) {
 
         switch (lvl) {
-            //timer D interrupt   
+            //timer D interrupt    
             case 4:
                 if (interruptEnableB & interruptMaskB & 0x10) {
                     interruptPendingB |= 0x10;
                 }
                 break;
-            //timer C interrupt   
+            //timer C interrupt    
             case 5:
                 if (interruptEnableB & interruptMaskB & 0x20) {
                     interruptPendingB |= 0x20;
                 }
                 break;
-            //acia (keyboard & midi)   
+            //acia (keyboard & midi)    
             case 6:
                 if (interruptEnableB & interruptMaskB & 0x40) {
                     interruptPendingB |= 0x40;
                 }
                 break;
-            //floppy   
+            //floppy    
             case 7:
                 if (interruptEnableB & interruptMaskB & 0x80) {
                     interruptPendingB |= 0x80;
                 }
                 break;
 
-            //timer B interrupt   
+            //timer B interrupt    
             case 8:
                 if (interruptEnableA & interruptMaskA & 1) {
                     interruptPendingA |= 1;
                 }
                 break;
-            //timer A interrupt   
+            //timer A interrupt    
             case 13:
                 if (interruptEnableA & interruptMaskA & 0x20) {
                     interruptPendingA |= 0x20;
@@ -572,7 +588,7 @@ EstyJs.mfp = function (opts) {
     }
 
     self.doInterrupts = function (processor) {
-        return ((interruptPendingA & (~interruptInServiceA)) | (interruptPendingB & (~interruptInServiceB)));
+        return (((interruptPendingA & (~interruptInServiceA)) | (interruptPendingB & (~interruptInServiceB))) != 0);
     }
 
     self.setFloppyGpio = function () {
@@ -591,7 +607,7 @@ EstyJs.mfp = function (opts) {
         gpio &= 239;
     }
 
-	
+
     self.getInterrupt = function () {
         var x = 0x80;
         var n = 15;
@@ -600,7 +616,7 @@ EstyJs.mfp = function (opts) {
                 if (!autoInterruptEnd) interruptInServiceA |= x;
                 interruptPendingA ^= x;
 
-                return n;
+                return n + (vectorReg << 4);
             }
             n--;
             x >>>= 1;
@@ -610,7 +626,7 @@ EstyJs.mfp = function (opts) {
             if ((interruptPendingB & x) && ((interruptInServiceB & x) == 0)) {
                 if (!autoInterruptEnd) interruptInServiceB |= x;
                 interruptPendingB ^= x;
-                return n;
+                return n + (vectorReg << 4);
             }
             n--;
             x >>>= 1;

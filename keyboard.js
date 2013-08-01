@@ -14,6 +14,8 @@ EstyJs.Keyboard = function (opts) {
     var rxRegisterFull = false;
     var txRegisterEmpty = true;
 
+    var output = opts.control;
+
     var interrupt = false;
 
     var mfp = opts.mfp;
@@ -37,6 +39,9 @@ EstyJs.Keyboard = function (opts) {
     var mouseXthreshold = 1;
     var mouseYthreshold = 1;
 
+    var mouseRButtonAbsWasDown = false;
+    var mouseLButtonAbsWasDown = false;
+
     var invertY = false;
 
     var paused = false;
@@ -45,8 +50,8 @@ EstyJs.Keyboard = function (opts) {
 
     var keyCommands = new Array();
 
-    var oldMouseX = -1;
-    var oldMouseY = -1;
+    var oldMouseX = -10000;
+    var oldMouseY = -10000;
     var mouseX = -1;
     var mouseY = -1;
 
@@ -73,7 +78,7 @@ EstyJs.Keyboard = function (opts) {
         55: { scancode: 0x08 }, //	7
         56: { scancode: 0x09 }, //	8
         57: { scancode: 0x0A }, //	9
-        58: { scancode: 0x0B }, //	0
+        48: { scancode: 0x0B }, //	0
         173: { scancode: 0x0C }, //	-
         61: { scancode: 0x0D }, //	==
         8: { scancode: 0x0E }, //	BS
@@ -171,11 +176,11 @@ EstyJs.Keyboard = function (opts) {
 
 
     function mouseMove(evt) {
-        mouseX = evt.pageX;
-        mouseY = evt.pageY;
-        if (oldMouseX == -1) {
-            oldMouseX = evt.pageX;
-            oldMouseY = evt.pageY;
+        mouseX = evt.pageX - $("#" + output).offset().left;
+        mouseY = evt.pageY - $("#" + output).offset().top;
+        if (oldMouseX == -10000) {
+            oldMouseX = mouseX;
+            oldMouseY = mouseY;
         }
     }
 
@@ -190,8 +195,8 @@ EstyJs.Keyboard = function (opts) {
                 rightDown = true;
                 break;
         }
-		evt.preventDefault();
-		return true;
+        evt.preventDefault();
+        return true;
 
     }
 
@@ -199,7 +204,7 @@ EstyJs.Keyboard = function (opts) {
         switch (evt.button) {
             case 0:
                 evt.stopPropagation();
-				
+
                 leftDown = false;
                 break;
             case 2:
@@ -207,8 +212,8 @@ EstyJs.Keyboard = function (opts) {
                 rightDown = false;
                 break;
         }
-		evt.preventDefault();
-		return true;
+        evt.preventDefault();
+        return true;
     }
 
     function keyDown(evt) {
@@ -228,7 +233,7 @@ EstyJs.Keyboard = function (opts) {
         //75 = left cursor, 77 = right cursor, 80 = down, 72 = up
         if (self.KeypadJoystick && (keyCode == 75 || keyCode == 77 || keyCode == 72 || keyCode == 80) || keyCode == 0x1D) {
             switch (keyCode) {
-                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire 
+                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire      
                 case 72:
                     //up
                     joystickPos |= 1;
@@ -270,13 +275,13 @@ EstyJs.Keyboard = function (opts) {
         var keyCode = keyCodes[keyNum];
         if (keyCode == null) return;
 
-        if (resetTime>0) return;
+        if (resetTime > 0) return;
 
         keyCode = keyCode.scancode;
 
         if (self.KeypadJoystick && (keyCode == 75 || keyCode == 77 || keyCode == 72 || keyCode == 80) || keyCode == 0x1D) {
             switch (keyCode) {
-                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire 
+                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire      
                 case 72:
                     //up
                     joystickPos &= 0xff - 1;
@@ -333,7 +338,7 @@ EstyJs.Keyboard = function (opts) {
 
     self.readData = function () {
         interrupt = false;
-		mfp.setAciaGpio();
+        mfp.setAciaGpio();
         rxRegisterFull = false;
         return readData;
     }
@@ -349,22 +354,25 @@ EstyJs.Keyboard = function (opts) {
             resetTime--;
             if (!resetTime) {
                 //self check completed ok.
+                joystickMode = 'E';
+                joystickPos = 0;
+                mouseMode = 'R';
                 dataOut.push(0xF0);
             }
 
 
         }
 
-if (dataOut.length > 0 && !rxRegisterFull) {
+        if (dataOut.length > 0 && !rxRegisterFull) {
             readData = (dataOut.shift()) & 0xff;
             rxRegisterFull = true; //set receive data register full
         }
 
         //trigger interrupt
         if ((control & 0x80) && (rxRegisterFull)) {
-                interrupt = true;
-				mfp.clearAciaGpio();
-                mfp.interruptRequest(6);
+            interrupt = true;
+            mfp.clearAciaGpio();
+            mfp.interruptRequest(6);
         }
 
 
@@ -387,6 +395,26 @@ if (dataOut.length > 0 && !rxRegisterFull) {
                 oldRightDown = rightDown;
             }
         }
+
+        /*if (mouseMode == 'A' && !resetTime) {
+        var xd = (mouseX - oldMouseX) >> 1;
+        var yd = (mouseY - oldMouseY) >> 1;
+
+        if ((Math.abs(xd) > mouseXthreshold) || (Math.abs(yd) > mouseYthreshold) || oldLeftDown != leftDown || oldRightDown != rightDown) {
+        dataOut.push(0xf8 | (leftDown ? 2 : 0) | (rightDown ? 1 : 0)); //mouse buttons
+        dataOut.push(xd);
+        if (invertY) {
+        dataOut.push(-yd);
+        } else {
+        dataOut.push(yd);
+        }
+
+        oldMouseX = mouseX;
+        oldMouseY = mouseY;
+        oldLeftDown = leftDown;
+        oldRightDown = rightDown;
+        }
+        }*/
 
         if (keyCommands.length > 0) {
 
@@ -468,7 +496,17 @@ if (dataOut.length > 0 && !rxRegisterFull) {
                     break;
                 case 0x0D:
                     //interrogate mouse position
-                    //not yet implmented
+
+                    dataOut.push(0xf7);
+                    dataOut.push(0 | (!leftDown & mouseLButtonAbsWasDown ? 8 : 0) | (leftDown & !mouseLButtonAbsWasDown ? 4 : 0) | (!rightDown & mouseRButtonAbsWasDown ? 2 : 0) | (rightDown & !mouseRButtonAbsWasDown ? 1 : 0));
+                    dataOut.push(Math.floor((mouseX / $("#"+output).width() * mouseXmax) >> 8));
+                    dataOut.push(Math.floor((mouseX / $("#" + output).width() * mouseXmax) & 0xff));
+                    dataOut.push(Math.floor((mouseY / $("#" + output).height() * mouseYmax) >> 8));
+                    dataOut.push(Math.floor((mouseY / $("#" + output).height() * mouseYmax) & 0xff));
+
+                    mouseRButtonAbsWasDown = rightDown;
+                    mouseLButtonAbsWasDown = leftDown;
+
                     break;
                 case 0x0E:
                     //set mouse position
@@ -508,8 +546,10 @@ if (dataOut.length > 0 && !rxRegisterFull) {
                     break;
                 case 0x16:
                     //interrogate joystick
-                    dataOut.push(0xfe);
+                    dataOut.push(0xfd);
+                    dataOut.push(0);
                     dataOut.push(joystickPos);
+                    // dataOut.push(0); dataOut.push(0); dataOut.push(0);dataOut.push(0); dataOut.push(0);
                     break;
                 case 0x17:
                     //set joystick monitoring
@@ -654,7 +694,7 @@ if (dataOut.length > 0 && !rxRegisterFull) {
             }
 
         }
-        
+
     }
 
     document.onkeydown = keyDown;
@@ -663,9 +703,9 @@ if (dataOut.length > 0 && !rxRegisterFull) {
     document.onmousemove = mouseMove;
     document.getElementById(htmlControl).onmousedown = mouseDown;
     document.getElementById(htmlControl).onmouseup = mouseUp;
-	document.getElementById(htmlControl).oncontextmenu = function() {
-		return false;
-	}
+    document.getElementById(htmlControl).oncontextmenu = function () {
+        return false;
+    }
 
     self.setSnapshotRegs = function (regs) {
         mouseMode = regs.mouseMode;
