@@ -130,7 +130,9 @@ function EstyJs(output) {
 				sound.endFrame(soundEnabled);
 				frameCount++;
 			}
-		}
+        }
+        display.setFrameRate(Math.floor(2000 / Math.max(20, window.performance.now() - currTime)));
+
 		var nextframe = Math.max(1,20-(window.performance.now()-currTime));
 
 		setTimeout(runframe, nextframe );

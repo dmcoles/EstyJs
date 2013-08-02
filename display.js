@@ -31,7 +31,7 @@ EstyJs.Display = function (opts) {
 
     var paletteConverted = new Uint32Array(16);
 
-    var lastTime = Date.now();
+    var frameRate = 0;
 
     var widths = new Uint8Array([160, 160, 160]);
 
@@ -72,7 +72,7 @@ EstyJs.Display = function (opts) {
         var colour;
         var m;
 
-        var m1, m2, m3, m4;
+        var m1, m2;
 
         var x = 0;
         var y = self.beamRow;
@@ -84,73 +84,71 @@ EstyJs.Display = function (opts) {
                 //lo-res
                 scrnAddr = screenRowStart;
                 for (x = 0; x < 20; x++) {
-                    m1 = memory.readWord(scrnAddr, true);
-                    m2 = memory.readWord(scrnAddr + 2, true);
-                    m3 = memory.readWord(scrnAddr + 4, true);
-                    m4 = memory.readWord(scrnAddr + 6, true);
+                    m1 = memory.readLong(scrnAddr);
+                    m2 = memory.readLong(scrnAddr + 4);
                     scrnAddr += 8;
 
-                    colour = paletteConverted[((m1 & 0x8000) >> 15) | ((m2 & 0x8000) >> 14) | ((m3 & 0x8000) >> 13) | ((m4 & 0x8000) >> 12)];
+                    colour = paletteConverted[((m1 & 0x80000000) >>> 31) | ((m1 & 0x8000) >> 14) | ((m2 & 0x80000000) >>> 29) | ((m2 & 0x8000) >> 12)];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x4000) >> 14) | ((m2 & 0x4000) >> 13) | ((m3 & 0x4000) >> 12) | ((m4 & 0x4000) >> 11)];
+                    colour = paletteConverted[((m1 & 0x40000000) >> 30) | ((m1 & 0x4000) >> 13) | ((m2 & 0x40000000) >> 28) | ((m2 & 0x4000) >> 11)];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x2000) >> 13) | ((m2 & 0x2000) >> 12) | ((m3 & 0x2000) >> 11) | ((m4 & 0x2000) >> 10)];
+                    colour = paletteConverted[((m1 & 0x20000000) >> 29) | ((m1 & 0x2000) >> 12) | ((m2 & 0x20000000) >> 27) | ((m2 & 0x2000) >> 10)];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x1000) >> 12) | ((m2 & 0x1000) >> 11) | ((m3 & 0x1000) >> 10) | ((m4 & 0x1000) >> 9)];
+                    colour = paletteConverted[((m1 & 0x10000000) >> 28) | ((m1 & 0x1000) >> 11) | ((m2 & 0x10000000) >> 26) | ((m2 & 0x1000) >> 9)];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x800) >> 11) | ((m2 & 0x800) >> 10) | ((m3 & 0x800) >> 9) | ((m4 & 0x800) >> 8)];
+                    colour = paletteConverted[((m1 & 0x8000000) >> 27) | ((m1 & 0x800) >> 10) | ((m2 & 0x8000000) >> 25) | ((m2 & 0x800) >> 8)];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x400) >> 10) | ((m2 & 0x400) >> 9) | ((m3 & 0x400) >> 8) | ((m4 & 0x400) >> 7)];
+                    colour = paletteConverted[((m1 & 0x4000000) >> 26) | ((m1 & 0x400) >> 9) | ((m2 & 0x4000000) >> 24) | ((m2 & 0x400) >> 7)];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x200) >> 9) | ((m2 & 0x200) >> 8) | ((m3 & 0x200) >> 7) | ((m4 & 0x200) >> 6)];
+                    colour = paletteConverted[((m1 & 0x2000000) >> 25) | ((m1 & 0x200) >> 8) | ((m2 & 0x2000000) >> 23) | ((m2 & 0x200) >> 6)];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x100) >> 8) | ((m2 & 0x100) >> 7) | ((m3 & 0x100) >> 6) | ((m4 & 0x100) >> 5)];
+                    colour = paletteConverted[((m1 & 0x1000000) >> 24) | ((m1 & 0x100) >> 7) | ((m2 & 0x1000000) >> 22) | ((m2 & 0x100) >> 5)];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x80) >> 7) | ((m2 & 0x80) >> 6) | ((m3 & 0x80) >> 5) | ((m4 & 0x80) >> 4)];
+                    colour = paletteConverted[((m1 & 0x800000) >> 23) | ((m1 & 0x80) >> 6) | ((m2 & 0x800000) >> 21) | ((m2 & 0x80) >> 4)];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x40) >> 6) | ((m2 & 0x40) >> 5) | ((m3 & 0x40) >> 4) | ((m4 & 0x40) >> 3)];
+                    colour = paletteConverted[((m1 & 0x400000) >> 22) | ((m1 & 0x40) >> 5) | ((m2 & 0x400000) >> 20) | ((m2 & 0x40) >> 3)];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x20) >> 5) | ((m2 & 0x20) >> 4) | ((m3 & 0x20) >> 3) | ((m4 & 0x20) >> 2)];
+                    colour = paletteConverted[((m1 & 0x200000) >> 21) | ((m1 & 0x20) >> 4) | ((m2 & 0x200000) >> 19) | ((m2 & 0x20) >> 2)];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x10) >> 4) | ((m2 & 0x10) >> 3) | ((m3 & 0x10) >> 2) | ((m4 & 0x10) >> 1)];
+                    colour = paletteConverted[((m1 & 0x100000) >> 20) | ((m1 & 0x10) >> 3) | ((m2 & 0x100000) >> 18) | ((m2 & 0x10) >> 1)];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x8) >> 3) | ((m2 & 0x8) >> 2) | ((m3 & 0x8) >> 1) | ((m4 & 0x8))];
+                    colour = paletteConverted[((m1 & 0x80000) >> 19) | ((m1 & 0x8) >> 2) | ((m2 & 0x80000) >> 17) | ((m2 & 0x8))];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x4) >> 2) | ((m2 & 0x4) >> 1) | ((m3 & 0x4)) | ((m4 & 0x4) << 1)];
+                    colour = paletteConverted[((m1 & 0x40000) >> 18) | ((m1 & 0x4) >> 1) | ((m2 & 0x40000) >> 16) | ((m2 & 0x4) << 1)];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x2) >> 1) | ((m2 & 0x2)) | ((m3 & 0x2) << 1) | ((m4 & 0x2) << 2)];
+                    colour = paletteConverted[((m1 & 0x20000) >> 17) | ((m1 & 0x2)) | ((m2 & 0x20000) >> 15) | ((m2 & 0x2) << 2)];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x1)) | ((m2 & 0x1) << 1) | ((m3 & 0x1) << 2) | ((m4 & 0x1) << 3)];
+                    colour = paletteConverted[((m1 & 0x10000) >> 16) | ((m1 & 0x1) << 1) | ((m2 & 0x10000)>> 14) | ((m2 & 0x1) << 3)];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
@@ -162,56 +160,55 @@ EstyJs.Display = function (opts) {
                 //med res
                 scrnAddr = screenRowStart;
                 for (x = 0; x < 40; x++) {
-                    m1 = memory.readWord(scrnAddr, true);
-                    m2 = memory.readWord(scrnAddr + 2, true);
+                    m1 = memory.readLong(scrnAddr);
                     scrnAddr += 4;
 
-                    colour = paletteConverted[((m1 & 0x8000) >> 15) | ((m2 & 0x8000) >> 14)];
+                    colour = paletteConverted[((m1 & 0x80000000) >>> 31) | ((m1 & 0x8000) >> 14)];
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x4000) >> 14) | ((m2 & 0x4000) >> 13)];
+                    colour = paletteConverted[((m1 & 0x40000000) >> 30) | ((m1 & 0x4000) >> 13)];
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x2000) >> 13) | ((m2 & 0x2000) >> 12)];
+                    colour = paletteConverted[((m1 & 0x20000000) >> 29) | ((m1 & 0x2000) >> 12)];
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x1000) >> 12) | ((m2 & 0x1000) >> 11)];
+                    colour = paletteConverted[((m1 & 0x10000000) >> 28) | ((m1 & 0x1000) >> 11)];
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x800) >> 11) | ((m2 & 0x800) >> 10)];
+                    colour = paletteConverted[((m1 & 0x8000000) >> 27) | ((m1 & 0x800) >> 10)];
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x400) >> 10) | ((m2 & 0x400) >> 9)];
+                    colour = paletteConverted[((m1 & 0x4000000) >> 26) | ((m1 & 0x400) >> 9)];
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x200) >> 9) | ((m2 & 0x200) >> 8)];
+                    colour = paletteConverted[((m1 & 0x2000000) >> 25) | ((m1 & 0x200) >> 8)];
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x100) >> 8) | ((m2 & 0x100) >> 7)];
+                    colour = paletteConverted[((m1 & 0x1000000) >> 24) | ((m1 & 0x100) >> 7)];
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x80) >> 7) | ((m2 & 0x80) >> 6)];
+                    colour = paletteConverted[((m1 & 0x800000) >> 23) | ((m1 & 0x80) >> 6)];
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x40) >> 6) | ((m2 & 0x40) >> 5)];
+                    colour = paletteConverted[((m1 & 0x400000) >> 22) | ((m1 & 0x40) >> 5)];
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x20) >> 5) | ((m2 & 0x20) >> 4)];
+                    colour = paletteConverted[((m1 & 0x200000) >> 21) | ((m1 & 0x20) >> 4)];
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x10) >> 4) | ((m2 & 0x10) >> 3)];
+                    colour = paletteConverted[((m1 & 0x100000) >> 20) | ((m1 & 0x10) >> 3)];
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x8) >> 3) | ((m2 & 0x8) >> 2)];
+                    colour = paletteConverted[((m1 & 0x80000) >> 19) | ((m1 & 0x8) >> 2)];
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x4) >> 2) | ((m2 & 0x4) >> 1)];
+                    colour = paletteConverted[((m1 & 0x40000) >> 18) | ((m1 & 0x4) >> 1)];
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x2) >> 1) | ((m2 & 0x2))];
+                    colour = paletteConverted[((m1 & 0x20000) >> 17) | ((m1 & 0x2))];
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x1)) | ((m2 & 0x1) << 1)];
+                    colour = paletteConverted[((m1 & 0x10000) >> 16) | ((m1 & 0x1) << 1)];
                     data[pixelIndex++] = colour;
 
 
@@ -222,7 +219,7 @@ EstyJs.Display = function (opts) {
                 //high res
                 scrnAddr = screenRowStart;
                 for (x = 0; x < 80; x++) {
-                    m = memory.readByte(scrnAddr++, true);
+                    m = memory.readByte(scrnAddr++);
                     colour = paletteConverted[(m & 0x80) >> 7];
                     data[pixelIndex++] = colour;
 
@@ -248,7 +245,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = colour;
                 }
                 for (x = 0; x < 80; x++) {
-                    m = memory.readByte(scrnAddr++, true);
+                    m = memory.readByte(scrnAddr++);
                     colour = paletteConverted[(m & 0x80) >> 7];
                     data[pixelIndex++] = colour;
 
@@ -287,7 +284,7 @@ EstyJs.Display = function (opts) {
         var colour;
         var m;
 
-        var m1, m2, m3, m4;
+        var m1, m2;
 
         var x = 0;
         var y = self.beamRow;
@@ -299,13 +296,11 @@ EstyJs.Display = function (opts) {
                 //lo-res
                 scrnAddr = screenRowStart;
                 for (x = 0; x < 20; x++) {
-                    m1 = memory.readWord(scrnAddr, true);
-                    m2 = memory.readWord(scrnAddr + 2, true);
-                    m3 = memory.readWord(scrnAddr + 4, true);
-                    m4 = memory.readWord(scrnAddr + 6, true);
+                    m1 = memory.readLong(scrnAddr);
+                    m2 = memory.readLong(scrnAddr + 4);
                     scrnAddr += 8;
 
-                    colour = paletteConverted[((m1 & 0x8000) >> 15) | ((m2 & 0x8000) >> 14) | ((m3 & 0x8000) >> 13) | ((m4 & 0x8000) >> 12)];
+                    colour = paletteConverted[((m1 & 0x80000000) >>> 31) | ((m1 & 0x8000) >> 14) | ((m2 & 0x80000000) >>> 29) | ((m2 & 0x8000) >> 12)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -315,7 +310,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x4000) >> 14) | ((m2 & 0x4000) >> 13) | ((m3 & 0x4000) >> 12) | ((m4 & 0x4000) >> 11)];
+                    colour = paletteConverted[((m1 & 0x40000000) >> 30) | ((m1 & 0x4000) >> 13) | ((m2 & 0x40000000) >> 28) | ((m2 & 0x4000) >> 11)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -325,7 +320,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x2000) >> 13) | ((m2 & 0x2000) >> 12) | ((m3 & 0x2000) >> 11) | ((m4 & 0x2000) >> 10)];
+                    colour = paletteConverted[((m1 & 0x20000000) >> 29) | ((m1 & 0x2000) >> 12) | ((m2 & 0x20000000) >> 27) | ((m2 & 0x2000) >> 10)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -335,7 +330,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x1000) >> 12) | ((m2 & 0x1000) >> 11) | ((m3 & 0x1000) >> 10) | ((m4 & 0x1000) >> 9)];
+                    colour = paletteConverted[((m1 & 0x10000000) >> 28) | ((m1 & 0x1000) >> 11) | ((m2 & 0x10000000) >> 26) | ((m2 & 0x1000) >> 9)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -345,7 +340,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x800) >> 11) | ((m2 & 0x800) >> 10) | ((m3 & 0x800) >> 9) | ((m4 & 0x800) >> 8)];
+                    colour = paletteConverted[((m1 & 0x8000000) >> 27) | ((m1 & 0x800) >> 10) | ((m2 & 0x8000000) >> 25) | ((m2 & 0x800) >> 8)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -355,7 +350,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x400) >> 10) | ((m2 & 0x400) >> 9) | ((m3 & 0x400) >> 8) | ((m4 & 0x400) >> 7)];
+                    colour = paletteConverted[((m1 & 0x4000000) >> 26) | ((m1 & 0x400) >> 9) | ((m2 & 0x4000000) >> 24) | ((m2 & 0x400) >> 7)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -365,7 +360,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x200) >> 9) | ((m2 & 0x200) >> 8) | ((m3 & 0x200) >> 7) | ((m4 & 0x200) >> 6)];
+                    colour = paletteConverted[((m1 & 0x2000000) >> 25) | ((m1 & 0x200) >> 8) | ((m2 & 0x2000000) >> 23) | ((m2 & 0x200) >> 6)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -375,7 +370,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x100) >> 8) | ((m2 & 0x100) >> 7) | ((m3 & 0x100) >> 6) | ((m4 & 0x100) >> 5)];
+                    colour = paletteConverted[((m1 & 0x1000000) >> 24) | ((m1 & 0x100) >> 7) | ((m2 & 0x1000000) >> 22) | ((m2 & 0x100) >> 5)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -385,7 +380,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x80) >> 7) | ((m2 & 0x80) >> 6) | ((m3 & 0x80) >> 5) | ((m4 & 0x80) >> 4)];
+                    colour = paletteConverted[((m1 & 0x800000) >> 23) | ((m1 & 0x80) >> 6) | ((m2 & 0x800000) >> 21) | ((m2 & 0x80) >> 4)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -395,7 +390,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x40) >> 6) | ((m2 & 0x40) >> 5) | ((m3 & 0x40) >> 4) | ((m4 & 0x40) >> 3)];
+                    colour = paletteConverted[((m1 & 0x400000) >> 22) | ((m1 & 0x40) >> 5) | ((m2 & 0x400000) >> 20) | ((m2 & 0x40) >> 3)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -405,7 +400,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x20) >> 5) | ((m2 & 0x20) >> 4) | ((m3 & 0x20) >> 3) | ((m4 & 0x20) >> 2)];
+                    colour = paletteConverted[((m1 & 0x200000) >> 21) | ((m1 & 0x20) >> 4) | ((m2 & 0x200000) >> 19) | ((m2 & 0x20) >> 2)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -415,7 +410,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x10) >> 4) | ((m2 & 0x10) >> 3) | ((m3 & 0x10) >> 2) | ((m4 & 0x10) >> 1)];
+                    colour = paletteConverted[((m1 & 0x100000) >> 20) | ((m1 & 0x10) >> 3) | ((m2 & 0x100000) >> 18) | ((m2 & 0x10) >> 1)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -425,7 +420,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x8) >> 3) | ((m2 & 0x8) >> 2) | ((m3 & 0x8) >> 1) | ((m4 & 0x8))];
+                    colour = paletteConverted[((m1 & 0x80000) >> 19) | ((m1 & 0x8) >> 2) | ((m2 & 0x80000) >> 17) | ((m2 & 0x8))];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -435,7 +430,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x4) >> 2) | ((m2 & 0x4) >> 1) | ((m3 & 0x4)) | ((m4 & 0x4) << 1)];
+                    colour = paletteConverted[((m1 & 0x40000) >> 18) | ((m1 & 0x4) >> 1) | ((m2 & 0x40000) >> 16) | ((m2 & 0x4) << 1)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -445,7 +440,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x2) >> 1) | ((m2 & 0x2)) | ((m3 & 0x2) << 1) | ((m4 & 0x2) << 2)];
+                    colour = paletteConverted[((m1 & 0x20000) >> 17) | ((m1 & 0x2)) | ((m2 & 0x20000) >> 15) | ((m2 & 0x2) << 2)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -455,7 +450,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x1)) | ((m2 & 0x1) << 1) | ((m3 & 0x1) << 2) | ((m4 & 0x1) << 3)];
+                    colour = paletteConverted[((m1 & 0x10000) >> 16) | ((m1 & 0x1) << 1) | ((m2 & 0x10000) >> 14) | ((m2 & 0x1) << 3)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -473,101 +468,100 @@ EstyJs.Display = function (opts) {
                 //med res
                 scrnAddr = screenRowStart;
                 for (x = 0; x < 40; x++) {
-                    m1 = memory.readWord(scrnAddr, true);
-                    m2 = memory.readWord(scrnAddr + 2, true);
+                    m1 = memory.readLong(scrnAddr, true);
                     scrnAddr += 4;
 
-                    colour = paletteConverted[((m1 & 0x8000) >> 15) | ((m2 & 0x8000) >> 14)];
+                    colour = paletteConverted[((m1 & 0x80000000) >>> 31) | ((m1 & 0x8000) >> 14)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x4000) >> 14) | ((m2 & 0x4000) >> 13)];
+                    colour = paletteConverted[((m1 & 0x40000000) >> 30) | ((m1 & 0x4000) >> 13)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x2000) >> 13) | ((m2 & 0x2000) >> 12)];
+                    colour = paletteConverted[((m1 & 0x20000000) >> 29) | ((m1 & 0x2000) >> 12)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x1000) >> 12) | ((m2 & 0x1000) >> 11)];
+                    colour = paletteConverted[((m1 & 0x10000000) >> 28) | ((m1 & 0x1000) >> 11)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x800) >> 11) | ((m2 & 0x800) >> 10)];
+                    colour = paletteConverted[((m1 & 0x8000000) >> 27) | ((m1 & 0x800) >> 10)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x400) >> 10) | ((m2 & 0x400) >> 9)];
+                    colour = paletteConverted[((m1 & 0x4000000) >> 26) | ((m1 & 0x400) >> 9)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x200) >> 9) | ((m2 & 0x200) >> 8)];
+                    colour = paletteConverted[((m1 & 0x2000000) >> 25) | ((m1 & 0x200) >> 8)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x100) >> 8) | ((m2 & 0x100) >> 7)];
+                    colour = paletteConverted[((m1 & 0x1000000) >> 24) | ((m1 & 0x100) >> 7)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x80) >> 7) | ((m2 & 0x80) >> 6)];
+                    colour = paletteConverted[((m1 & 0x800000) >> 23) | ((m1 & 0x80) >> 6)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x40) >> 6) | ((m2 & 0x40) >> 5)];
+                    colour = paletteConverted[((m1 & 0x400000) >> 22) | ((m1 & 0x40) >> 5)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x20) >> 5) | ((m2 & 0x20) >> 4)];
+                    colour = paletteConverted[((m1 & 0x200000) >> 21) | ((m1 & 0x20) >> 4)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x10) >> 4) | ((m2 & 0x10) >> 3)];
+                    colour = paletteConverted[((m1 & 0x100000) >> 20) | ((m1 & 0x10) >> 3)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x8) >> 3) | ((m2 & 0x8) >> 2)];
+                    colour = paletteConverted[((m1 & 0x80000) >> 19) | ((m1 & 0x8) >> 2)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x4) >> 2) | ((m2 & 0x4) >> 1)];
+                    colour = paletteConverted[((m1 & 0x40000) >> 18) | ((m1 & 0x4) >> 1)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x2) >> 1) | ((m2 & 0x2))];
+                    colour = paletteConverted[((m1 & 0x20000) >> 17) | ((m1 & 0x2))];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
                     data[pixelIndex++] = 255;
 
-                    colour = paletteConverted[((m1 & 0x1)) | ((m2 & 0x1) << 1)];
+                    colour = paletteConverted[((m1 & 0x10000) >> 16) | ((m1 & 0x1) << 1)];
                     data[pixelIndex++] = colour & 0xff;
                     data[pixelIndex++] = (colour & 0xff00) >> 8;
                     data[pixelIndex++] = (colour & 0xff0000) >> 16;
@@ -705,13 +699,7 @@ EstyJs.Display = function (opts) {
                 context.fillText(text[1], 600, 395);
             }
 
-            var currTime = Date.now();
-
-            var speed = Math.floor(2000 / (currTime - lastTime));
-
-            lastTime = currTime;
-
-            context.fillText(speed.toString() + "%", 10, 15);
+            context.fillText(frameRate.toString() + "%", 10, 15);
 
         }
 
@@ -811,6 +799,10 @@ EstyJs.Display = function (opts) {
 
     self.writeScreenMode = function (val) {
         screenMode = val;
+    }
+
+    self.setFrameRate = function(val) {
+        frameRate = val;
     }
 
     self.setSnapshotRegs = function (data) {

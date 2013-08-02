@@ -4,11 +4,12 @@
 EstyJs.Memory = function (opts) {
     var self = {};
 
-    var defaultRamsize=1024*1024;
+    var defaultRamsize = 1024 * 1024;
     //var defaultRamsize = 512 * 1024;
-    var romsize = 128 * 1024;
-    var ram = new Uint8Array(defaultRamsize);
-    var rom = new Uint8Array(romsize);
+    var ram = new ArrayBuffer(defaultRamsize);
+    var ramDataView = new DataView(ram);
+    var rom = new ArrayBuffer(0);
+    var romDataView = new DataView(rom);
 
     var io = opts.io;
     var bug = opts.bug;
@@ -27,7 +28,8 @@ EstyJs.Memory = function (opts) {
         oReq.onload = function (oEvent) {
             var arrayBuffer = oReq.response; // Note: not oReq.responseText
             if (arrayBuffer) {
-                rom = new Uint8Array(arrayBuffer);
+                rom = arrayBuffer;
+                romDataView = new DataView(rom);
                 self.loaded++;
             }
         };
@@ -50,31 +52,31 @@ EstyJs.Memory = function (opts) {
 
         //mirror first 8 bytes of rom at 0
         if (addr < 8) {
-            return rom[addr];
+            return romDataView.getUint8(addr);
         }
 
-        if (addr < ram.length) {
-            return ram[addr];
+        if (addr < ram.byteLength) {
+            return ramDataView.getUint8(addr);
         }
 
-        if (addr > 0xe00000 & addr < 0xf00040) {
+        if (addr >= 0xe00000 & addr < 0xf00040) {
             //system rom
-            return rom[addr & 0x3ffff];
+            return romDataView.getUint8(addr & 0x3ffff);
             //return 0xff;
         }
 
-        if (addr >= 0xf00040 & ram <= 0xf9ffff) {
+        if (addr >= 0xf00040 & addr < 0xfa0000) {
             //illegal
             processor.memoryError(addr);
         }
 
-        if (addr >= 0xfa0000 & ram <= 0xfc0000) {
+        if (addr >= 0xfa0000 & addr <= 0xfc0000) {
             //cartridge rom
             return 0xff;
         }
 
         if (addr >= 0xfc0000 & addr < 0xff0000) {
-            return rom[addr & 0x3ffff];
+            return romDataView.getUint8(addr & 0x3ffff);
         }
 
         if (addr >= 0xff0000) {
@@ -83,23 +85,78 @@ EstyJs.Memory = function (opts) {
             return m;
         }
 
-        return 0;
+        return 0xff;
 
     }
 
     self.readWord = function (addr) {
+        addr = addr & 0xffffff;
+
+        //mirror first 8 bytes of rom at 0
+        if (addr < 8) {
+            return romDataView.getUint16(addr,false);
+        }
+
+        if (addr < ram.byteLength) {
+            return ramDataView.getUint16(addr,false);
+        }
+
+        if (addr >= 0xe00000 & addr < 0xf00040) {
+            //system rom
+            return romDataView.getUint16(addr & 0x3ffff);
+            //return 0xff;
+        }
+
+        if (addr >= 0xfa0000 & addr < 0xfc0000) {
+            //cartridge rom
+            return 0xffff;
+        }
+
+        if (addr >= 0xfc0000 & addr < 0xff0000) {
+            return romDataView.getUint16(addr & 0x3ffff);
+        }
+
+        //default to reading one byte at a time for all other memory addresses
         return ((self.readByte(addr) << 8) + (self.readByte(addr + 1))) & 0xffff;
+
+
     }
 
     self.readLong = function (addr) {
+        addr = addr & 0xffffff;
+
+        //mirror first 8 bytes of rom at 0
+        if (addr < 8) {
+            return romDataView.getInt32(addr, false);
+        }
+
+        if (addr < ram.byteLength) {
+            return ramDataView.getInt32(addr, false);
+        }
+
+        if (addr > 0xe00000 & addr < 0xf00040) {
+            //system rom
+            return romDataView.getInt32(addr & 0x3ffff);
+            //return 0xff;
+        }
+
+        if (addr >= 0xfa0000 & addr <= 0xfc0000) {
+            //cartridge rom
+            return 0xffffffff;
+        }
+
+        if (addr >= 0xfc0000 & addr < 0xff0000) {
+            return romDataView.getInt32(addr & 0x3ffff);
+        }
+
+        //default to reading one byte at a time for all other memory addresses
         return ((self.readByte(addr) << 24) + (self.readByte(addr + 1) << 16) + (self.readByte(addr + 2) << 8) + (self.readByte(addr + 3))) & 0xffffffff;
     }
 
-    self.writeByte = function (addr, val) {
-        val = val & 0xff;
+    self.writeByte = function (addr,val) {
         addr = addr & 0xffffff;
-        if (addr < ram.length) {
-            ram[addr] = val;
+        if (addr < ram.byteLength) {
+            ramDataView.setUint8(addr,val);
         }
         else if ((addr & 0xFF0000) == 0xFF0000) {
             io.write(addr, val);
@@ -111,15 +168,27 @@ EstyJs.Memory = function (opts) {
     }
 
     self.writeWord = function (addr, val) {
-        self.writeByte(addr, (val >>> 8) & 0xff);
-        self.writeByte(addr + 1, val & 0xff);
+        addr = addr & 0xffffff;
+        if (addr < ram.byteLength) {
+            ramDataView.setUint16(addr, val,false);
+        }
+        else {
+            self.writeByte(addr, val >>> 8);
+            self.writeByte(addr + 1, val & 0xff);
+        }
     }
 
     self.writeLong = function (addr, val) {
-        self.writeByte(addr, (val >>> 24) & 0xff);
-        self.writeByte(addr + 1, (val >>> 16) & 0xff);
-        self.writeByte(addr + 2, (val >>> 8) & 0xff);
-        self.writeByte(addr + 3, val & 0xff);
+        addr = addr & 0xffffff;
+        if (addr < ram.byteLength) {
+            ramDataView.setInt32(addr, val,false);
+        }
+        else {
+            self.writeByte(addr, val >>> 24);
+            self.writeByte(addr + 1, (val >>> 16) & 0xff);
+            self.writeByte(addr + 2, (val >>> 8) & 0xff);
+            self.writeByte(addr + 3, val & 0xff);
+        }
     }
 
     self.loadSnapshot = function (buffer, offset, datalen) {
@@ -133,7 +202,7 @@ EstyJs.Memory = function (opts) {
     }
 
     self.reset = function () {
-        for (var i = 0; i < ram.length; i++) ram[i] = 0;
+        for (var i = 0; i < ram.byteLength; i++) ram[i] = 0;
     }
 
     self.setProcessor = function (p) {
