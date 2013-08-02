@@ -34,6 +34,10 @@ EstyJs.Processor = function (opts) {
 
     var pendingInterrupts = new Array(false, false, false, false, false, false, false);
 
+    var ldeaTable = new Array(null, ldEA_T_RD, ldEA_T_RA, ldEA_T_AD, ldEA_T_IM);
+    var steaTable = new Array(null, stEA_T_RD, stEA_T_RA, stEA_T_AD);
+    var exeaTable = new Array(null, exEA_M_rdd, exEA_M_rda, exEA_M_ria, exEA_M_ripo, exEA_M_ripr, exEA_M_rid, exEA_M_rii, exEA_M_pcid, exEA_M_pcii, exEA_M_absw, exEA_M_absl, exEA_M_imm, null, null, null, null);
+
     var frameRowCycles = 512;
 
     var SPCFLAG_TRACE = false;
@@ -282,7 +286,101 @@ EstyJs.Processor = function (opts) {
         }
     }
 
+    function exEA_M_rdd(ea, z) {
+        ea.a = ea.r;
+        ea.t = T_RD;
+        return ea;
+    }
+
+    function exEA_M_rda(ea, z) {
+        ea.a = ea.r;
+        ea.t = T_RA;
+        return ea;
+    }
+
+    function exEA_M_ria(ea, z) {
+        ea.a = regs.a[ea.r];
+        ea.t = T_AD;
+        return ea;
+    }
+
+    function exEA_M_ripo(ea, z) {
+        ea.a = regs.a[ea.r];
+        ea.t = T_AD;
+        regs.a[ea.r] += z;
+        return ea;
+    }
+
+    function exEA_M_ripr(ea, z) {
+        regs.a[ea.r] -= z;
+        /*if (regs.a[ea.r] < 0) {
+        BUG.say(sprintf('exEA() M_ripr A%d < 0 ($%x)', ea.r, regs.a[ea.r]));
+        regs.a[ea.r] += 0x100000000;
+        //AMIGA.cpu.diss(fault.pc, 1);
+        //AMIGA.cpu.dump();  
+        //exception2(regs.a[ea.r], 0);
+        }*/
+        ea.a = regs.a[ea.r];
+        ea.t = T_AD;
+        return ea;
+    }
+
+    function exEA_M_rid(ea, z) {
+        dp = (nextIWord());
+        ea.a = add32(regs.a[ea.r], extWord(dp));
+        ea.t = T_AD;
+        return ea;
+    }
+
+    function exEA_M_rii(ea, z) {
+        ea.a = exII(regs.a[ea.r]);
+        ea.t = T_AD;
+        return ea;
+    }
+
+    function exEA_M_pcid(ea, z) {
+        dp = extWord(nextIWord());
+        ea.a = add32(regs.pc - 2, dp);
+        ea.t = T_AD;
+        return ea;
+    }
+
+    function exEA_M_pcii(ea, z) {
+        ea.a = exII(regs.pc);
+        ea.t = T_AD;
+        return ea;
+    }
+
+    function exEA_M_absw(ea, z) {
+        ea.a = extWord(nextIWord());
+        ea.t = T_AD;
+        return ea;
+    }
+
+    function exEA_M_absl(ea, z) {
+        ea.a = nextILong();
+        ea.t = T_AD;
+        return ea;
+    }
+
+    function exEA_M_imm(ea, z) {
+        if (ea.r == -1) {
+            switch (z) {
+                case 1: ea.a = nextIByte(); break;
+                case 2: ea.a = nextIWord(); break;
+                case 4: ea.a = nextILong(); break;
+                default:
+                    Fatal(SAEE_CPU_Internal, 'cpu.exEA() invalid size');
+            }
+        } else
+            ea.a = ea.r;
+        ea.t = T_IM;
+        return ea;
+    }
+
     function exEA(ea, z) {
+        return exeaTable[ea.m](ea, z);
+
         var dp;
 
         switch (ea.m) {
@@ -416,7 +514,60 @@ EstyJs.Processor = function (opts) {
         return ea;
     }
 
+    function ldEA_T_RD(ea, z) {
+        switch (z) {
+            case 1: return regs.d[ea.a] & 0xff;
+            case 2: return regs.d[ea.a] & 0xffff;
+            case 4: return regs.d[ea.a];
+            default:
+                Fatal(SAEE_CPU_Internal, 'cpu.ldEA() T_RD invalid size');
+        }
+
+    }
+
+    function ldEA_T_RA(ea, z) {
+        switch (z) {
+            case 2: return regs.a[ea.a] & 0xffff;
+            case 4: return regs.a[ea.a];
+            default:
+                Fatal(SAEE_CPU_Internal, 'cpu.ldEA() T_RA invalid size');
+        }
+    }
+
+    function ldEA_T_AD(ea, z) {
+        /* The USP must not be byte-aligned */
+        if (ea.m == M_ripo && ea.r == 7 && z == 1) {
+            //BUG.say(sprintf('ldEA() USP ADDRESS ERROR A7 $%08x', regs.a[7]));
+            regs.a[7]++;
+            return memory.readWord(regs.a[7] - 2) >>> 8;
+        }
+        if (ea.a > 0xffffff) { //&& ea.m != M_absl) {
+            //BUG.say(sprintf('ldEA() BUS ERROR, $%08x > 24bit, reducing address to $%08x', ea.a, ea.a & 0xffffff));
+            ea.a &= 0xffffff;
+        }
+        if ((ea.a & 1) && z != 1) {
+            BUG.say(sprintf('ldEA() ADDRESS ERROR $%08x, pc $%08x', ea.a, fault.pc));
+            //AMIGA.cpu.diss(fault.pc-8, 20);
+            //AMIGA.cpu.dump();  
+            exception3(ea.a, 1);
+        }
+        switch (z) {
+            case 1: return memory.readByte(ea.a);
+            case 2: return memory.readWord(ea.a);
+            case 4: return memory.readLong(ea.a);
+            default:
+                Fatal(SAEE_CPU_Internal, 'cpu.ldEA() T_AD invalid size');
+        }
+    }
+
+    function ldEA_T_IM(ea, z) {
+        return ea.a;
+    }
+
+
     function ldEA(ea, z) {
+        return ldeaTable[ea.t](ea, z);
+
         switch (ea.t) {
             case T_RD:
                 {
@@ -470,7 +621,50 @@ EstyJs.Processor = function (opts) {
         }
     }
 
+    function stEA_T_RD(ea, z, v) {
+        switch (z) {
+            case 1: regs.d[ea.a] = ((regs.d[ea.a] & 0xffffff00) | v) >>> 0; break;
+            case 2: regs.d[ea.a] = ((regs.d[ea.a] & 0xffff0000) | v) >>> 0; break;
+            case 4: regs.d[ea.a] = v; break;
+            default:
+                Fatal(SAEE_CPU_Internal, 'cpu.stEA() invalid size');
+        }
+    }
+
+    function stEA_T_RA(ea, z, v) {
+        regs.a[ea.a] = v;
+    }
+
+    function stEA_T_AD(ea, z, v) {
+        /* The USP must not be byte-aligned */
+        if (ea.m == M_ripr && ea.r == 7 && z == 1) {
+            //BUG.say(sprintf('stEA() USP ADDRESS ERROR A7 $%08x', regs.a[7]));
+            memory.writeWord(--regs.a[7], v << 8);
+            return;
+        }
+        if (ea.a > 0xffffff) { //&& ea.m != M_absl) {
+            //BUG.say(sprintf('stEA() BUS ERROR, $%08x > 24bit, reducing address to $%08x', ea.a, ea.a & 0xffffff));
+            ea.a &= 0xffffff;
+        }
+        if ((ea.a & 1) && z != 1) {
+            BUG.say(sprintf('stEA() ADDRESS ERROR $%08x, pc $%08x', ea.a, fault.pc));
+            //AMIGA.cpu.diss(fault.pc-8, 20);
+            //AMIGA.cpu.dump();  
+            exception3(ea.a, 1);
+        }
+        switch (z) {
+            case 1: memory.writeByte(ea.a, v); break;
+            case 2: memory.writeWord(ea.a, v); break;
+            case 4: memory.writeLong(ea.a, v); break;
+            default:
+                Fatal(SAEE_CPU_Internal, 'cpu.stEA() invalid size');
+        }
+    }
+
     function stEA(ea, z, v) {
+        steaTable[ea.t](ea, z, v);
+        return;
+
         switch (ea.t) {
             case T_RD:
                 switch (z) {
@@ -711,39 +905,39 @@ EstyJs.Processor = function (opts) {
     /* Data Movement */
 
     function I_EXG(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
-        stEA(sea, p.z, d);
-        stEA(dea, p.z, s);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
+        steaTable[sea.t](sea, p.z, d);
+        steaTable[dea.t](dea, p.z, s);
         //ccna
         //BUG.say(sprintf('I_EXG.%s s $%08x <-> d $%08x', szChr(p.z), s, d));
         return p.cyc; //6;
     }
 
     function I_LEA(p) {
-        var sea = exEA(p.s, p.z);
-        var dea = exEA(p.d, p.z);
-        stEA(dea, p.z, sea.a);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        steaTable[dea.t](dea, p.z, sea.a);
         //ccna
         //BUG.say(sprintf('I_LEA.%s sea $%08x', szChr(p.z), sea.a));
         return p.cyc;
     }
 
     function I_PEA(p) {
-        var sea = exEA(p.s, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
         var dea = exEA(new effAddr(M_ripr, 7), p.z);
-        stEA(dea, p.z, sea.a);
+        steaTable[dea.t](dea, p.z, sea.a);
         //ccna			
         return p.cyc;
     }
 
     function I_LINK(p) {
-        var sea = exEA(p.s, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
         var An = sea.a;
-        var dea = exEA(p.d, p.z);
-        var dp = ldEA(dea, p.z); if (p.z == 2) dp = extWord(dp);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var dp = ldeaTable[dea.t](dea, p.z); if (p.z == 2) dp = extWord(dp);
 
         stEA(exEA(new effAddr(M_ripr, 7), 4), 4, regs.a[An]);
         regs.a[An] = regs.a[7];
@@ -758,7 +952,7 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_UNLK(p) {
-        var sea = exEA(p.s, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
         var An = sea.a;
         regs.a[7] = regs.a[An];
         regs.a[An] = ldEA(exEA(new effAddr(M_ripo, 7), 4), 4);
@@ -768,30 +962,30 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_MOVE(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        stEA(dea, p.z, s);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        steaTable[dea.t](dea, p.z, s);
         flgLogical(s, p.z);
         //BUG.say(sprintf('I_MOVE.%s sm %d dm %d sa $%08x da $%08x r $%08x', szChr(p.z), p.s.m, p.d.m, sea.a, dea.a, s));				
         return p.cyc;
     }
 
     function I_MOVEA(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z); if (p.z == 2) s = extWord(s);
-        var dea = exEA(p.d, 4);
-        stEA(dea, 4, s);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z); if (p.z == 2) s = extWord(s);
+        var dea = exeaTable[p.d.m](p.d, 4);
+        steaTable[dea.t](dea, 4, s);
         //ccna
         //BUG.say(sprintf('I_MOVEA.%s s $%08x A%d', szChr(p.z), s, p.d.r));		 			
         return p.cyc;
     }
 
     function I_MOVEQ(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z); s = extByte(s);
-        var dea = exEA(p.d, p.z);
-        stEA(dea, p.z, s);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z); s = extByte(s);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        steaTable[dea.t](dea, p.z, s);
         flgLogical(s, p.z);
         //BUG.say(sprintf('I_MOVEQ.%s s $%08x', szChr(p.z), s));
         return p.cyc;
@@ -835,7 +1029,7 @@ EstyJs.Processor = function (opts) {
                 if (p.z == 2)
                     r &= 0xffff;
 
-                stEA(dea, p.z, r);
+                steaTable[dea.t](dea, p.z, r);
                 dea.a += p.z;
                 n++;
             }
@@ -852,7 +1046,7 @@ EstyJs.Processor = function (opts) {
 
         for (var i = 0; i < 16; i++) {
             if (sea.a & (1 << i)) {
-                var r = ldEA(dea, p.z); if (p.z == 2) r = extWord(r);
+                var r = ldeaTable[dea.t](dea, p.z); if (p.z == 2) r = extWord(r);
                 dea.a += p.z;
 
                 if (i < 8) {
@@ -876,46 +1070,46 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_MOVEP(p) {
-        var sea = exEA(p.s, p.z);
-        var dea = exEA(p.d, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
 
         //M2R
         if (sea.m == M_rid) {
             var r;
 
             if (p.z == 2) {
-                r = ldEA(sea, 1) << 8;
+                r = ldeaTable[sea.t](sea, 1) << 8;
                 sea.a += 2;
-                r += ldEA(sea, 1);
+                r += ldeaTable[sea.t](sea, 1);
             } else {
-                r = ldEA(sea, 1) << 24;
+                r = ldeaTable[sea.t](sea, 1) << 24;
                 sea.a += 2;
-                r += ldEA(sea, 1) << 16;
+                r += ldeaTable[sea.t](sea, 1) << 16;
                 sea.a += 2;
-                r += ldEA(sea, 1) << 8;
+                r += ldeaTable[sea.t](sea, 1) << 8;
                 sea.a += 2;
-                r += ldEA(sea, 1);
+                r += ldeaTable[sea.t](sea, 1);
                 r >>>= 0;
             }
             //BUG.say(sprintf('I_MOVEP_M2R.%s A%d addr $%08x r $%08x', szChr(p.z), dea.a, sea.a - (p.z == 2 ? 4 : 8), r));
-            stEA(dea, p.z, r);
+            steaTable[dea.t](dea, p.z, r);
         }
         //R2M
         else {
-            var r = ldEA(sea, p.z);
+            var r = ldeaTable[sea.t](sea, p.z);
 
             if (p.z == 2) {
-                stEA(dea, 1, r >>> 8);
+                steaTable[dea.t](dea, 1, r >>> 8);
                 dea.a += 2;
-                stEA(dea, 1, r);
+                steaTable[dea.t](dea, 1, r);
             } else {
-                stEA(dea, 1, r >>> 24);
+                steaTable[dea.t](dea, 1, r >>> 24);
                 dea.a += 2;
-                stEA(dea, 1, r >>> 16);
+                steaTable[dea.t](dea, 1, r >>> 16);
                 dea.a += 2;
-                stEA(dea, 1, r >>> 8);
+                steaTable[dea.t](dea, 1, r >>> 8);
                 dea.a += 2;
-                stEA(dea, 1, r);
+                steaTable[dea.t](dea, 1, r);
             }
             //BUG.say(sprintf('I_MOVEP_R2M.%s A%d addr $%08x r $%08x', szChr(p.z), sea.a, dea.a - (p.z == 2 ? 4 : 8), r));
         }
@@ -927,56 +1121,56 @@ EstyJs.Processor = function (opts) {
     /* Integer Arithmetic */
 
     function I_ADD(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = addAuto(s, d, p.z);
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgAdd(s, d, r, p.z, false);
         //BUG.say(sprintf('I_ADD.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));	
         return p.cyc;
     }
 
     function I_ADDA(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z); if (p.z == 2) s = extWord(s);
-        var dea = exEA(p.d, 4);
-        var d = ldEA(dea, 4);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z); if (p.z == 2) s = extWord(s);
+        var dea = exeaTable[p.d.m](p.d, 4);
+        var d = ldeaTable[dea.t](dea, 4);
         var r = add32(s, d);
-        stEA(dea, 4, r);
+        steaTable[dea.t](dea, 4, r);
         //ccna
         //BUG.say(sprintf('I_ADDA.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));	
         return p.cyc;
     }
 
     function I_ADDI(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = addAuto(s, d, p.z);
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgAdd(s, d, r, p.z, false);
         //BUG.say(sprintf('I_ADDI.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));	
         return p.cyc;
     }
 
     /*function I_ADDQ(p) {
-    var sea = exEA(p.s, p.z);
-    var s = ldEA(sea, p.z);
+    var sea = exeaTable[p.s.m](p.s, p.z);
+    var s = ldeaTable[sea.t](sea, p.z);
     if (p.d.m == M_rda) {
-    var dea = exEA(p.d, 4);
-    var d = ldEA(dea, 4); 
+    var dea = exeaTable[p.d.m](p.d, 4);
+    var d = ldeaTable[dea.t](dea, 4); 
     var r = add32(s, d);
-    stEA(dea, 4, r);
+    steaTable[dea.t](dea, 4, r);
     //ccna
     //return 8;  			
     } else {
-    var dea = exEA(p.d, p.z);
-    var d = ldEA(dea, p.z);
+    var dea = exeaTable[p.d.m](p.d, p.z);
+    var d = ldeaTable[dea.t](dea, p.z);
     var r = addAuto(s, d, p.z);
-    stEA(dea, p.z, r);
+    steaTable[dea.t](dea, p.z, r);
     flgAdd(s, d, r, p.z, false);
     //return dea.m == M_rdd ? (p.z == 4 ? 8 : 4) : (p.z == 4 ? 12 : 8) + dea.c;  
     }
@@ -985,45 +1179,45 @@ EstyJs.Processor = function (opts) {
     }*/
 
     function I_ADDQ(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = addAuto(s, d, p.z);
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgAdd(s, d, r, p.z, false);
         //BUG.say(sprintf('I_ADDQ.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));		
         return p.cyc;
     }
     function I_ADDQA(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, 4);
-        var d = ldEA(dea, 4);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, 4);
+        var d = ldeaTable[dea.t](dea, 4);
         var r = add32(s, d);
-        stEA(dea, 4, r);
+        steaTable[dea.t](dea, 4, r);
         //ccna	
         //BUG.say(sprintf('I_ADDQA.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));		
         return p.cyc;
     }
 
     function I_ADDX(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = addAuto(s, d, p.z); if (regs.x) r = addAuto(r, 1, p.z);
         //var _x = regs.x?1:0;		
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgAdd(s, d, r, p.z, true);
         //BUG.say(sprintf('I_ADDX.%s s $%08x d $%08x xo %d xn %d r $%08x', szChr(p.z), s, d, _x, regs.x?1:0, r));
         return p.cyc;
     }
 
     function I_CLR(p) {
-        var dea = exEA(p.d, p.z);
-        var foo = ldEA(dea, p.z); /* In the MC68000 and MC68008 a memory location is read before it is cleared. */
-        stEA(dea, p.z, 0);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var foo = ldeaTable[dea.t](dea, p.z); /* In the MC68000 and MC68008 a memory location is read before it is cleared. */
+        steaTable[dea.t](dea, p.z, 0);
 
         regs.n = false;
         regs.z = true;
@@ -1034,10 +1228,10 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_CMP(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = subAuto(d, s, p.z);
         flgCmp(s, d, r, p.z);
         //BUG.say(sprintf('I_CMP.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));
@@ -1045,10 +1239,10 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_CMPA(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z); if (p.z == 2) s = extWord(s);
-        var dea = exEA(p.d, 4);
-        var d = ldEA(dea, 4);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z); if (p.z == 2) s = extWord(s);
+        var dea = exeaTable[p.d.m](p.d, 4);
+        var d = ldeaTable[dea.t](dea, 4);
         var r = sub32(d, s);
         flgCmp(s, d, r, 4);
         //BUG.say(sprintf('I_CMPA.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));
@@ -1056,10 +1250,10 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_CMPI(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = subAuto(d, s, p.z);
         flgCmp(s, d, r, p.z);
         //BUG.say(sprintf('I_CMPI.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));
@@ -1067,10 +1261,10 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_CMPM(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = subAuto(d, s, p.z);
         flgCmp(s, d, r, p.z);
         //BUG.say(sprintf('I_CMPM.%s s $%08x d $%08x r $%08x | %c', szChr(p.z), s, d, r, s));
@@ -1078,10 +1272,10 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_DIVS(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z); s = castWord(s);
-        var dea = exEA(p.d, 4);
-        var d = ldEA(dea, 4); //d = castLong(d);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z); s = castWord(s);
+        var dea = exeaTable[p.d.m](p.d, 4);
+        var d = ldeaTable[dea.t](dea, 4); //d = castLong(d);
 
         regs.c = false;
         if (s == 0) {
@@ -1107,7 +1301,7 @@ EstyJs.Processor = function (opts) {
                 regs.n = (quo & 0x8000) != 0;
 
                 var r = ((rem << 16) | quo) >>> 0;
-                stEA(dea, 4, r);
+                steaTable[dea.t](dea, 4, r);
                 //BUG.say(sprintf('I_DIVS.%s $%08x / $%08x = $%08x (quo $%08x | rem $%08x)', szChr(p.z), d, s, r, quo, rem));			
             }
             return p.cyc;
@@ -1115,10 +1309,10 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_DIVU(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z); s = castUWord(s);
-        var dea = exEA(p.d, 4);
-        var d = ldEA(dea, 4); d = castULong(d);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z); s = castUWord(s);
+        var dea = exeaTable[p.d.m](p.d, 4);
+        var d = ldeaTable[dea.t](dea, 4); d = castULong(d);
 
 
         regs.c = false;
@@ -1145,7 +1339,7 @@ EstyJs.Processor = function (opts) {
                 regs.n = (quo & 0x8000) != 0;
 
                 var r = ((rem << 16) | quo) >>> 0;
-                stEA(dea, 4, r);
+                steaTable[dea.t](dea, 4, r);
                 //BUG.say(sprintf('I_DIVU.%s $%08x / $%08x = $%08x (quo $%08x | rem $%08x)', szChr(p.z), d, s, r, quo, rem));			
             }
             return p.cyc;
@@ -1154,23 +1348,23 @@ EstyJs.Processor = function (opts) {
 
     function I_EXT(p) {
         var z = p.z == 2 ? 1 : 2;
-        var dea = exEA(p.d, z);
-        var d = ldEA(dea, z);
+        var dea = exeaTable[p.d.m](p.d, z);
+        var d = ldeaTable[dea.t](dea, z);
         var r = p.z == 2 ? extByteToWord(d) : extWord(d);
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgLogical(r, p.z);
         //BUG.say(sprintf('I_EXT.%s d $%08x r $%08x', szChr(p.z), d, r));
         return p.cyc;
     }
 
     function I_MULS(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z); s = castWord(s);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z); d = castWord(d);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z); s = castWord(s);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z); d = castWord(d);
         var r = s * d;
         if (r < 0) r += 0x100000000;
-        stEA(dea, 4, r);
+        steaTable[dea.t](dea, 4, r);
 
         regs.v = false; /* not possible for 16x16 */
         regs.c = false;
@@ -1181,12 +1375,12 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_MULU(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z); s = castUWord(s);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z); d = castUWord(d);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z); s = castUWord(s);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z); d = castUWord(d);
         var r = s * d;
-        stEA(dea, 4, r);
+        steaTable[dea.t](dea, 4, r);
 
         regs.v = false; /* not possible for 16x16 */
         regs.c = false;
@@ -1197,76 +1391,76 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_NEG(p) {
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = subAuto(0, d, p.z);
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgNeg(d, r, p.z, false);
         //BUG.say(sprintf('I_NEG.%s d $%08x r $%08x', szChr(p.z), d, r));
         return p.cyc;
     }
 
     function I_NEGX(p) {
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = subAuto(0, d, p.z); if (regs.x) r = subAuto(r, 1, p.z);
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgNeg(d, r, p.z, true);
         //BUG.say(sprintf('I_NEGX.%s d $%08x x %d r $%08x', szChr(p.z), d, regs.x ? 1 : 0, r));
         return p.cyc;
     }
 
     function I_SUB(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = subAuto(d, s, p.z);
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgSub(s, d, r, p.z, false);
         //BUG.say(sprintf('I_SUB.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));				
         return p.cyc;
     }
 
     function I_SUBA(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z); if (p.z == 2) s = extWord(s);
-        var dea = exEA(p.d, 4);
-        var d = ldEA(dea, 4);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z); if (p.z == 2) s = extWord(s);
+        var dea = exeaTable[p.d.m](p.d, 4);
+        var d = ldeaTable[dea.t](dea, 4);
         var r = sub32(d, s);
-        stEA(dea, 4, r);
+        steaTable[dea.t](dea, 4, r);
         //ccna		
         //BUG.say(sprintf('I_SUBA.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));		
         return p.cyc;
     }
 
     function I_SUBI(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = subAuto(d, s, p.z);
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgSub(s, d, r, p.z, false);
         //BUG.say(sprintf('I_SUBI.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));				
         return p.cyc;
     }
 
     /*function I_SUBQ(p) {
-    var sea = exEA(p.s, p.z);
-    var s = ldEA(sea, p.z);
+    var sea = exeaTable[p.s.m](p.s, p.z);
+    var s = ldeaTable[sea.t](sea, p.z);
     if (p.d.m == M_rda) {
-    var dea = exEA(p.d, 4);
-    var d = ldEA(dea, 4);
+    var dea = exeaTable[p.d.m](p.d, 4);
+    var d = ldeaTable[dea.t](dea, 4);
     var r = sub32(d, s);
-    stEA(dea, 4, r);		
+    steaTable[dea.t](dea, 4, r);		
     //ccna
     //return 8;  
     } else {
-    var dea = exEA(p.d, p.z);
-    var d = ldEA(dea, p.z);
+    var dea = exeaTable[p.d.m](p.d, p.z);
+    var d = ldeaTable[dea.t](dea, p.z);
     var r = subAuto(d, s, p.z);
-    stEA(dea, p.z, r);		
+    steaTable[dea.t](dea, p.z, r);		
     flgSub(s, d, r, p.z, false);
     //return dea.m == M_rdd ? (p.z == 4 ? 8 : 4) : (p.z == 4 ? 12 : 8) + dea.c;  
     }	
@@ -1275,36 +1469,36 @@ EstyJs.Processor = function (opts) {
     }*/
 
     function I_SUBQ(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = subAuto(d, s, p.z);
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgSub(s, d, r, p.z, false);
         //BUG.say(sprintf('I_SUBQ.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));		
         return p.cyc;
     }
     function I_SUBQA(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, 4);
-        var d = ldEA(dea, 4);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, 4);
+        var d = ldeaTable[dea.t](dea, 4);
         var r = sub32(d, s);
-        stEA(dea, 4, r);
+        steaTable[dea.t](dea, 4, r);
         //ccna
         //BUG.say(sprintf('I_SUBQA.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));		
         return p.cyc;
     }
 
     function I_SUBX(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = subAuto(d, s, p.z); if (regs.x) r = subAuto(r, 1, p.z);
         //var _x = regs.x?1:0;		
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgSub(s, d, r, p.z, true);
         //BUG.say(sprintf('I_SUBX.%s s $%08x d $%08x xo %d xn %d r $%08x', szChr(p.z), s, d, _x, regs.x?1:0, r));
         return p.cyc;
@@ -1314,83 +1508,83 @@ EstyJs.Processor = function (opts) {
     /* Logical */
 
     function I_AND(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = (s & d) >>> 0;
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgLogical(r, p.z);
         //BUG.say(sprintf('I_AND.%s s $%08x d $%08x r $%08x, cyc %d', szChr(p.z), s, d, r, p.cyc));		
         return p.cyc;
     }
 
     function I_ANDI(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = (s & d) >>> 0;
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgLogical(r, p.z);
         //BUG.say(sprintf('I_ANDI.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));			
         return p.cyc;
     }
 
     function I_EOR(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = (s ^ d) >>> 0;
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgLogical(r, p.z);
         //BUG.say(sprintf('I_EOR.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));		
         return p.cyc;
     }
 
     function I_EORI(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = (s ^ d) >>> 0;
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgLogical(r, p.z);
         //BUG.say(sprintf('I_EORI.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));		
         return p.cyc;
     }
 
     function I_NOT(p) {
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var m = p.z == 1 ? 0xff : (p.z == 2 ? 0xffff : 0xffffffff);
         var r = ~d & m; if (r < 0) r += 0x100000000;
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgLogical(r, p.z);
         //BUG.say(sprintf('I_NOT.%s d $%08x r $%08x', szChr(p.z), d, r));
         return p.cyc;
     }
 
     function I_OR(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = (s | d) >>> 0;
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgLogical(r, p.z);
         //BUG.say(sprintf('I_OR.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));		
         return p.cyc;
     }
 
     function I_ORI(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = (s | d) >>> 0;
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         flgLogical(r, p.z);
         //BUG.say(sprintf('I_ORI.%s s $%08x d $%08x r $%08x', szChr(p.z), s, d, r));		
         return p.cyc;
@@ -1400,10 +1594,10 @@ EstyJs.Processor = function (opts) {
     /* Shift and Rotate */
 
     function I_ASL(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z) & 63;
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z) & 63;
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var n = s;
         var r = d;
         var c = false;
@@ -1417,7 +1611,7 @@ EstyJs.Processor = function (opts) {
                 r = (r & p.mz) >>> 0;
                 if (!v && (r & p.ms) != rm) v = true;
             }
-            stEA(dea, p.z, r);
+            steaTable[dea.t](dea, p.z, r);
             regs.c = regs.x = c;
         } else regs.c = false;
 
@@ -1429,10 +1623,10 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_ASR(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z) & 63;
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z) & 63;
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var n = s;
         var r = d;
         var c = false;
@@ -1443,7 +1637,7 @@ EstyJs.Processor = function (opts) {
                 c = (r & 1) != 0;
                 r = (sign | (r >>> 1)) >>> 0;
             }
-            stEA(dea, p.z, r);
+            steaTable[dea.t](dea, p.z, r);
             regs.c = regs.x = c;
         } else regs.c = false;
 
@@ -1455,10 +1649,10 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_LSL(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z) & 63;
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z) & 63;
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var n = s;
         var r = d;
         var c = false;
@@ -1469,7 +1663,7 @@ EstyJs.Processor = function (opts) {
                 r <<= 1;
                 r = (r & p.mz) >>> 0;
             }
-            stEA(dea, p.z, r);
+            steaTable[dea.t](dea, p.z, r);
             regs.c = regs.x = c;
         } else regs.c = false;
 
@@ -1481,10 +1675,10 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_LSR(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z) & 63;
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z) & 63;
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var n = s;
         var r = d;
         var c = false;
@@ -1494,7 +1688,7 @@ EstyJs.Processor = function (opts) {
                 c = (r & 1) != 0;
                 r >>>= 1;
             }
-            stEA(dea, p.z, r);
+            steaTable[dea.t](dea, p.z, r);
             regs.c = regs.x = c;
         } else regs.c = false;
 
@@ -1506,10 +1700,10 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_ROL(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z) & 63;
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z) & 63;
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var n = s;
         var r = d;
         var c = false;
@@ -1521,7 +1715,7 @@ EstyJs.Processor = function (opts) {
                 r = (r & p.mz) >>> 0;
                 if (c) r = (r | 1) >>> 0;
             }
-            stEA(dea, p.z, r);
+            steaTable[dea.t](dea, p.z, r);
             regs.c = c;
         } else regs.c = false;
 
@@ -1533,10 +1727,10 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_ROR(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z) & 63;
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z) & 63;
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var n = s;
         var r = d;
         var c = false;
@@ -1547,7 +1741,7 @@ EstyJs.Processor = function (opts) {
                 r >>>= 1;
                 if (c) r = (p.ms | r) >>> 0;
             }
-            stEA(dea, p.z, r);
+            steaTable[dea.t](dea, p.z, r);
             regs.c = c;
         } else regs.c = false;
 
@@ -1559,10 +1753,10 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_ROXL(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z) & 63;
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z) & 63;
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var n = s;
         var r = d;
         var c = false;
@@ -1576,7 +1770,7 @@ EstyJs.Processor = function (opts) {
                 if (x) r = (r | 1) >>> 0;
                 x = c;
             }
-            stEA(dea, p.z, r);
+            steaTable[dea.t](dea, p.z, r);
             regs.c = regs.x = c;
         } else regs.c = regs.x;
 
@@ -1588,10 +1782,10 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_ROXR(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z) & 63;
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z) & 63;
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var n = s;
         var r = d;
         var c = false;
@@ -1604,7 +1798,7 @@ EstyJs.Processor = function (opts) {
                 if (x) r = (p.ms | r) >>> 0;
                 x = c;
             }
-            stEA(dea, p.z, r);
+            steaTable[dea.t](dea, p.z, r);
             regs.c = regs.x = c;
         } else regs.c = regs.x;
 
@@ -1616,10 +1810,10 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_SWAP(p) {
-        var dea = exEA(p.d, 4);
-        var d = ldEA(dea, 4);
+        var dea = exeaTable[p.d.m](p.d, 4);
+        var d = ldeaTable[dea.t](dea, 4);
         var r = ((d << 16) | (d >>> 16)) >>> 0;
-        stEA(dea, 4, r);
+        steaTable[dea.t](dea, 4, r);
 
         regs.n = (r & 0x80000000) != 0;
         regs.z = r == 0;
@@ -1634,14 +1828,14 @@ EstyJs.Processor = function (opts) {
 
     function I_BCHG(p) {
         var dz = p.d.m == M_rdd ? 4 : 1;
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, dz);
-        var d = ldEA(dea, dz);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, dz);
+        var d = ldeaTable[dea.t](dea, dz);
         var m = (1 << (s % (p.d.m == M_rdd ? 32 : 8))) >>> 0;
 
         var r = ((d & m) ? (d & ~m) : (d | m)) >>> 0;
-        stEA(dea, dz, r);
+        steaTable[dea.t](dea, dz, r);
         regs.z = (d & m) == 0;
 
         /*if (p.d.m == M_rdd)			
@@ -1654,14 +1848,14 @@ EstyJs.Processor = function (opts) {
 
     function I_BCLR(p) {
         var dz = p.d.m == M_rdd ? 4 : 1;
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, dz);
-        var d = ldEA(dea, dz);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, dz);
+        var d = ldeaTable[dea.t](dea, dz);
         var m = (1 << (s % (p.d.m == M_rdd ? 32 : 8))) >>> 0;
 
         var r = (d & ~m) >>> 0;
-        stEA(dea, dz, r);
+        steaTable[dea.t](dea, dz, r);
         regs.z = (d & m) == 0;
 
         /*if (p.d.m == M_rdd)			
@@ -1673,14 +1867,14 @@ EstyJs.Processor = function (opts) {
 
     function I_BSET(p) {
         var dz = p.d.m == M_rdd ? 4 : 1;
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, dz);
-        var d = ldEA(dea, dz);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, dz);
+        var d = ldeaTable[dea.t](dea, dz);
         var m = (1 << (s % (p.d.m == M_rdd ? 32 : 8))) >>> 0;
 
         var r = (d | m) >>> 0;
-        stEA(dea, dz, r);
+        steaTable[dea.t](dea, dz, r);
         regs.z = (d & m) == 0;
 
         /*if (p.d.m == M_rdd)			
@@ -1692,10 +1886,10 @@ EstyJs.Processor = function (opts) {
 
     function I_BTST(p) {
         var dz = p.d.m == M_rdd ? 4 : 1;
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, dz);
-        var d = ldEA(dea, dz);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, dz);
+        var d = ldeaTable[dea.t](dea, dz);
         var m = (1 << (s % (p.d.m == M_rdd ? 32 : 8))) >>> 0;
 
         regs.z = (d & m) == 0;
@@ -1711,10 +1905,10 @@ EstyJs.Processor = function (opts) {
     /* Binary-Coded Decimal */
 
     function I_ABCD(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var x = regs.x ? 1 : 0;
         var c = false;
 
@@ -1736,7 +1930,7 @@ EstyJs.Processor = function (opts) {
         }
         var r = (h << 4) | l;
 
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
 
         regs.x = regs.c = c;
         if (r) regs.z = false;
@@ -1749,8 +1943,8 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_NBCD(p) {
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var c = false;
 
         var d_h = (d >> 4) & 0xf;
@@ -1769,7 +1963,7 @@ EstyJs.Processor = function (opts) {
         }
         var r = (h << 4) | l;
 
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
 
         regs.x = regs.c = c;
         if (r) regs.z = false;
@@ -1782,10 +1976,10 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_SBCD(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var x = regs.x ? 1 : 0;
         var c = false;
 
@@ -1807,7 +2001,7 @@ EstyJs.Processor = function (opts) {
         }
         var r = (h << 4) | l;
 
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
 
         regs.x = regs.c = c;
         if (r) regs.z = false;
@@ -1868,10 +2062,10 @@ EstyJs.Processor = function (opts) {
     function I_Scc(p) {
         //var cc = p.s.r;
         var cc = p.c.cc;
-        var dea = exEA(p.d, p.z);
-        var foo = ldEA(dea, p.z); /* In the MC68000 and MC68008 a memory location is read before it is cleared. */
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var foo = ldeaTable[dea.t](dea, p.z); /* In the MC68000 and MC68008 a memory location is read before it is cleared. */
         var isTrue = ccTrue(cc);
-        stEA(dea, p.z, isTrue ? 0xff : 0);
+        steaTable[dea.t](dea, p.z, isTrue ? 0xff : 0);
         //ccna
         //BUG.say(sprintf('I_S%s, cc %d, ccTrue %d, cyc %d', ccNames[cc], cc, ccTrue(cc)?1:0, isTrue ? p.cycTrue : p.cycFalse));		
         return isTrue ? p.cycTrue : p.cycFalse;
@@ -1911,7 +2105,7 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_JMP(p) {
-        var dea = exEA(p.d, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
         setPC(dea.a);
         //ccna		
         //BUG.say(sprintf('I_JMP $%08x', dea.a));		
@@ -1919,7 +2113,7 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_JSR(p) {
-        var dea = exEA(p.d, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
         stEA(exEA(new effAddr(M_ripr, 7), 4), 4, regs.pc);
         setPC(dea.a);
         //ccna		
@@ -1945,8 +2139,8 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_TST(p) {
-        var dea = exEA(p.d, p.z);
-        var r = ldEA(dea, p.z); //r = extAuto(r, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var r = ldeaTable[dea.t](dea, p.z); //r = extAuto(r, p.z);
         flgLogical(r, p.z);
         //BUG.say(sprintf('I_TST.%s r $%08x', szChr(p.z), r));
         return p.cyc;
@@ -1961,8 +2155,8 @@ EstyJs.Processor = function (opts) {
     /* System Control - CCR */
 
     function I_ANDI_CCR(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
         var d = getCCR();
         var r = s & d;
         setCCR(r);
@@ -1971,8 +2165,8 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_EORI_CCR(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
         var d = getCCR();
         var r = s ^ d;
         setCCR(r);
@@ -1981,8 +2175,8 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_ORI_CCR(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
         var d = getCCR();
         var r = s | d;
         setCCR(r);
@@ -1991,8 +2185,8 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_MOVE_2CCR(p) {
-        var sea = exEA(p.s, p.z);
-        var ccr = ldEA(sea, p.z) & 0xff;
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var ccr = ldeaTable[sea.t](sea, p.z) & 0xff;
         //BUG.say(sprintf('I_MOVE_2CCR.%s old $%02x new $%02x', szChr(p.z), getCCR(), ccr));		
         setCCR(ccr);
         return p.cyc;
@@ -2000,8 +2194,8 @@ EstyJs.Processor = function (opts) {
 
     /*function I_MOVE_CCR2(p) { //ups, not for the 68000
     var ccr = getCCR();
-    var dea = exEA(p.d, p.z);
-    stEA(dea, p.z, ccr);  	
+    var dea = exeaTable[p.d.m](p.d, p.z);
+    steaTable[dea.t](dea, p.z, ccr);  	
     //ccna	
     //BUG.say(sprintf('I_MOVE_CCR2.%s $%02x', szChr(p.z), ccr));		
     return p.cyc;
@@ -2012,8 +2206,8 @@ EstyJs.Processor = function (opts) {
 
     function I_ANDI_SR(p) {
         if (regs.s) {
-            var sea = exEA(p.s, p.z);
-            var s = ldEA(sea, p.z);
+            var sea = exeaTable[p.s.m](p.s, p.z);
+            var s = ldeaTable[sea.t](sea, p.z);
             var d = getSR();
             var r = s & d;
             //BUG.say(sprintf('I_ANDI_SR.%s val $%02x, old $%02x new $%02x', szChr(p.z), s, d, r));				
@@ -2028,8 +2222,8 @@ EstyJs.Processor = function (opts) {
 
     function I_EORI_SR(p) {
         if (regs.s) {
-            var sea = exEA(p.s, p.z);
-            var s = ldEA(sea, p.z);
+            var sea = exeaTable[p.s.m](p.s, p.z);
+            var s = ldeaTable[sea.t](sea, p.z);
             var d = getSR();
             var r = s ^ d;
             //BUG.say(sprintf('I_EORI_SR.%s val $%02x, old $%02x new $%02x', szChr(p.z), s, d, r));		
@@ -2044,8 +2238,8 @@ EstyJs.Processor = function (opts) {
 
     function I_ORI_SR(p) {
         if (regs.s) {
-            var sea = exEA(p.s, p.z);
-            var s = ldEA(sea, p.z);
+            var sea = exeaTable[p.s.m](p.s, p.z);
+            var s = ldeaTable[sea.t](sea, p.z);
             var d = getSR();
             var r = s | d;
             //BUG.say(sprintf('I_ORI_SR.%s val $%02x, old $%02x new $%02x', szChr(p.z), s, d, r));				
@@ -2060,8 +2254,8 @@ EstyJs.Processor = function (opts) {
 
     function I_MOVE_2SR(p) {
         if (regs.s) {
-            var sea = exEA(p.s, p.z);
-            var sr = ldEA(sea, p.z);
+            var sea = exeaTable[p.s.m](p.s, p.z);
+            var sr = ldeaTable[sea.t](sea, p.z);
             //BUG.say(sprintf('I_MOVE_2SR.%s sr $%04x', szChr(p.z), sr));		 			
             setSR(sr);
             return p.cyc;
@@ -2074,9 +2268,9 @@ EstyJs.Processor = function (opts) {
 
     function I_MOVE_SR2(p) {
         var sr = getSR();
-        var dea = exEA(p.d, p.z);
-        var foo = ldEA(dea, p.z); /* Memory destination is read before it is written to. */
-        stEA(dea, p.z, sr);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var foo = ldeaTable[dea.t](dea, p.z); /* Memory destination is read before it is written to. */
+        steaTable[dea.t](dea, p.z, sr);
         //ccna	
         //BUG.say(sprintf('I_MOVE_SR2.%s sr $%04x', szChr(p.z), sr));		 			
         return p.cyc;
@@ -2087,8 +2281,8 @@ EstyJs.Processor = function (opts) {
 
     function I_MOVE_USP2A(p) {
         if (regs.s) {
-            var dea = exEA(p.d, p.z);
-            stEA(dea, p.z, regs.usp);
+            var dea = exeaTable[p.d.m](p.d, p.z);
+            steaTable[dea.t](dea, p.z, regs.usp);
             return p.cyc;
         } else {
             //BUG.say('I_MOVE_USP PRIVILIG VIOLATION');						
@@ -2099,8 +2293,8 @@ EstyJs.Processor = function (opts) {
 
     function I_MOVE_A2USP(p) {
         if (regs.s) {
-            var sea = exEA(p.s, p.z);
-            regs.usp = ldEA(sea, p.z);
+            var sea = exeaTable[p.s.m](p.s, p.z);
+            regs.usp = ldeaTable[sea.t](sea, p.z);
             return p.cyc;
         } else {
             //BUG.say('I_MOVE_USP PRIVILIG VIOLATION');						
@@ -2113,10 +2307,10 @@ EstyJs.Processor = function (opts) {
     /* System Control */
 
     function I_CHK(p) {
-        var sea = exEA(p.s, p.z);
-        var s = ldEA(sea, p.z);
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var sea = exeaTable[p.s.m](p.s, p.z);
+        var s = ldeaTable[sea.t](sea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
 
         //BUG.say(sprintf('I_CHK.%s s $%08x d $%08x (d>s||d<0)', szChr(p.z), s, d));
 
@@ -2196,8 +2390,8 @@ EstyJs.Processor = function (opts) {
 
     function I_STOP(p) {
         if (regs.s) {
-            var sea = exEA(p.s, p.z);
-            var sr = ldEA(sea, p.z);
+            var sea = exeaTable[p.s.m](p.s, p.z);
+            var sr = ldeaTable[sea.t](sea, p.z);
             setSR(sr);
 
             regs.stopped = true;
@@ -2213,8 +2407,8 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_TRAP(p) {
-        var dea = exEA(p.d, p.z);
-        var vec = ldEA(dea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var vec = ldeaTable[dea.t](dea, p.z);
         //BUG.say(sprintf('I_TRAP exception 32 + %d', vec));										
         return exception(32 + vec);
         //ccna
@@ -2230,10 +2424,10 @@ EstyJs.Processor = function (opts) {
     }
 
     function I_TAS(p) {
-        var dea = exEA(p.d, p.z);
-        var d = ldEA(dea, p.z);
+        var dea = exeaTable[p.d.m](p.d, p.z);
+        var d = ldeaTable[dea.t](dea, p.z);
         var r = 0x80 | d;
-        stEA(dea, p.z, r);
+        steaTable[dea.t](dea, p.z, r);
         regs.n = (d & 0x80) != 0;
         regs.z = d == 0;
         regs.v = false;
@@ -5342,10 +5536,10 @@ EstyJs.Processor = function (opts) {
 
         tot_cycles -= frameRowCycles;
     }
-	
-	self.getRowCycleCount = function() {
-		return tot_cycles;
-	}
+
+    self.getRowCycleCount = function () {
+        return tot_cycles;
+    }
 
     self.memoryError = function (addr) {
         //cause bus exception
