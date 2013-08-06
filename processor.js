@@ -5309,8 +5309,15 @@ EstyJs.Processor = function (opts) {
         if (n == 2) {
             BUG.say(sprintf('cpu.exception() %d, regs.pc $%08x, fault.pc $%08x, fault.op $%04x, fault.ad $%08x, fault.ia %d', n, regs.pc, fault.pc, fault.op, fault.ad, fault.ia ? 1 : 0));
 
-            stEA(exEA(new effAddr(M_ripr, 7), 4), 4, regs.pc);
+            //stEA(exEA(new effAddr(M_ripr, 7), 4), 4, regs.pc);
+            //stEA(exEA(new effAddr(M_ripr, 7), 2), 2, sr);
+			
+			stEA(exEA(new effAddr(M_ripr, 7), 4), 4, regs.pc);
             stEA(exEA(new effAddr(M_ripr, 7), 2), 2, sr);
+            stEA(exEA(new effAddr(M_ripr, 7), 2), 2, fault.op);
+            stEA(exEA(new effAddr(M_ripr, 7), 4), 4, fault.ad);
+            stEA(exEA(new effAddr(M_ripr, 7), 2), 2, cd);
+			
         } else if (n == 3) {
             BUG.say(sprintf('cpu.exception() %d, regs.pc $%08x, fault.pc $%08x, fault.op $%04x, fault.ad $%08x, fault.ia %d', n, regs.pc, fault.pc, fault.op, fault.ad, fault.ia ? 1 : 0));
 
@@ -5492,6 +5499,20 @@ EstyJs.Processor = function (opts) {
         while (tot_cycles < frameRowCycles) {
             //AMIGA.events.cycle(cpu_cycles);
 
+			pendingInterrupts[6] = mfp.doInterrupts(self);
+
+            for (var i = 6; i > 0; i--) {
+                if (pendingInterrupts[i] && i > regs.intmask) {
+                    pendingInterrupts[i] = false;
+                    interrupt(i);
+                }
+            }
+			
+			if (regs.stopped) {
+				tot_cycles+=4;
+				continue;
+			}
+			
             var op = nextOPCode();
             var lastPc = regs.pc;
             try {
@@ -5522,16 +5543,9 @@ EstyJs.Processor = function (opts) {
             if (SPCFLAG_TRACE) trace();
 
 
-            tot_cycles += cpu_cycles;
+            tot_cycles += ((cpu_cycles+3)&0xfffc);
 
-            pendingInterrupts[6] = mfp.doInterrupts(self);
-
-            for (var i = 6; i > 0; i--) {
-                if (pendingInterrupts[i] && i > regs.intmask) {
-                    pendingInterrupts[i] = false;
-                    interrupt(i);
-                }
-            }
+            
 
         }
 

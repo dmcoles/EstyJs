@@ -776,7 +776,7 @@ EstyJs.Display = function (opts) {
     }
 
     self.getCurrentAddress = function () {
-        return screenRowStart + ((Math.min(376, Math.max(0, processor.getRowCycleCount() - 56)) >> 4) << 1);
+        return screenRowStart +((Math.min(320,Math.max(0,processor.getRowCycleCount()-68))>>2)<<1);
     }
 
     self.getSyncMode = function () {
