@@ -67,12 +67,18 @@ EstyJs.mfp = function (opts) {
 
         if (addr == 0xFFFA07) {
             interruptEnableA = val;
+
+            //remove pending interrupts too
+            interruptPendingA &= val;
             return;
         }
 
 
         if (addr == 0xFFFA09) {
             interruptEnableB = val;
+
+            //remove pending interrupts too
+            interruptPendingB &= val;
             return;
         }
 
@@ -208,9 +214,9 @@ EstyJs.mfp = function (opts) {
 
         if ((addr == 0xFFFA21)) {
             //timer B data
-			timerBdata = val;
-			if (!timerBcontrol) timerBcntr = val;
-			timerBcntr2 = 0;
+            timerBdata = val;
+            if (!timerBcontrol) timerBcntr = val;
+            timerBcntr2 = 0;
             return;
         }
 
@@ -377,6 +383,11 @@ EstyJs.mfp = function (opts) {
         if (addr == 0xFFFA25) {
             //timer D data
             return timerDcntr;
+        }
+
+        if (addr == 0xFFFA05) {
+            //data direction
+            return 0;
         }
 
         bug.say(sprintf('invalid mfp read $%06x', addr));
@@ -547,38 +558,38 @@ EstyJs.mfp = function (opts) {
     self.interruptRequest = function (lvl) {
 
         switch (lvl) {
-            //timer D interrupt    
+            //timer D interrupt      
             case 4:
                 if (interruptEnableB & interruptMaskB & 0x10) {
                     interruptPendingB |= 0x10;
                 }
                 break;
-            //timer C interrupt    
+            //timer C interrupt      
             case 5:
                 if (interruptEnableB & interruptMaskB & 0x20) {
                     interruptPendingB |= 0x20;
                 }
                 break;
-            //acia (keyboard & midi)    
+            //acia (keyboard & midi)      
             case 6:
                 if (interruptEnableB & interruptMaskB & 0x40) {
                     interruptPendingB |= 0x40;
                 }
                 break;
-            //floppy    
+            //floppy      
             case 7:
                 if (interruptEnableB & interruptMaskB & 0x80) {
                     interruptPendingB |= 0x80;
                 }
                 break;
 
-            //timer B interrupt    
+            //timer B interrupt      
             case 8:
                 if (interruptEnableA & interruptMaskA & 1) {
                     interruptPendingA |= 1;
                 }
                 break;
-            //timer A interrupt    
+            //timer A interrupt      
             case 13:
                 if (interruptEnableA & interruptMaskA & 0x20) {
                     interruptPendingA |= 0x20;

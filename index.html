@@ -41,6 +41,24 @@
 		<div id="accordion">
 			<h3>Atari ST</h3>
 			<div>	
+                <img src="Atari_1040STf.jpg"/>
+                The Atari ST was a 16 bit home computer that was very popular in the late 80's and early 90's.
+                It was the direct competitor of the Commodore Amiga and both machines were based upon the 68000 cpu.
+				<br/><br/>
+                It was first released in 1985 and was very sucessfull in the professional music industry due to having MIDI ports as standard.						
+			</div>
+			<h3>EstyJS</h3>
+			<div>EstyJS is a javascript based emulator for the Atari ST. I was inspired to write this after completing the first release of my Acorn Electron emulator ElkJS.
+			<br/><br/>
+			<img src="Atari 520ST_inside.jpg"/><br/><br/>
+			EstyJS aims to emulate the ST accurately enough to be able to play many of the classic games made for this machine.
+			<br/><br />
+			The sourcecode for this emulator is available in my <a href="https://github.com/dmcoles/estyjs" >github</a> repository.
+			
+			<br/><br/>
+			</div>
+			<h3>Usage</h3>
+            <div>
 				Work in progress<br/><br/>
 				Currently there are some things not emulated:
 				<ol>
@@ -52,18 +70,18 @@
                 <br/>
 				Hints:<br/>
 				<br/>Joystick 1 is emulated using cursor keys and ctrl.
-				
-				
-			</div>
-			<h3>EstyJS</h3>
-			<div>
+				<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
 			</div>
 			
 			<h3>Credits</h3>
 			<div>
 			<u>EstyJS</u><br/><br/>
+			68000 emulation core - Rupert Hausberger (adapted from <a href="http://scriptedamigaemulator.net/">SAE</a> adaptation by Darren Coles)<br/><br/>
+			Atari ST image from wikipedia by <a href="http://en.wikipedia.org/wiki/File:Atari_1040STf.jpg"> Bill Bertram </a> <br/><br/>
+			Atari ST internals image from <a href="http://retrospec.sgn.net/users/tomcat/miodrag/Atari_ST/Atari_ST.htm" >retrospec</a>  <br/><br/>
+			Everything else - (c) Darren Coles 2013.<br/><br/>
 			</div>
-		</div>
+        </div>
 		<div id="estyjs">
 			<canvas id = "EstyJsOutput" width="640" height="400" >
 			</canvas>
@@ -122,7 +140,7 @@
                 <option value="Stunt Car Racer (1989)(Micro Style)[cr].st">Stunt car racer</option>               
                 <option value="Super Cars II (1991)(Gremlin)[cr Elite].st">Supercars II</option>               
                 <option value="Toki (1991)(Ocean)[cr BBC - Medway Boys][t].st">Toki</option>                               
-                <option value="Turrican II (1991)(Rainbow Arts)[cr Replicants][t].st">Turrican II (doesnt work)</option>               
+                <option value="Turrican II (1991)(Rainbow Arts)[cr Replicants][t].st">Turrican II</option>               
                 <option value="Vroom (1991)(Lankhor).st">Vroom</option>               
 			</select> 
 			<small><button onclick="openFileInDrive($('#diskImages').val(),'A');" id="Button1">Drive A</button></small>

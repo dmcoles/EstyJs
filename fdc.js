@@ -176,15 +176,15 @@ EstyJs.fdc = function (opts) {
         switch (commandNo & 0xf0) {
             case 0x0:
                 //track 0 seek
-                //bug.say(sprintf("fdc process command - restore %s", selectedDrive));
+                bug.say(sprintf("fdc process command - restore %s", selectedDrive));
                 commandCompleteTimer = 10;
                 //set busy flag
 
                 break;
             case 0x10:
                 //seek track				
-                //bug.say(sprintf("fdc process command - seek %s - track %d", selectedDrive, dataReg));
-                commandCompleteTimer = 2;
+                bug.say(sprintf("fdc process command - seek %s - track %d", selectedDrive, dataReg));
+                commandCompleteTimer = 5;
                 break;
             case 0x20:
                 bug.say("fdc process command - step");
@@ -216,7 +216,7 @@ EstyJs.fdc = function (opts) {
                 break;
             case 0x80:
                 commandCompleteTimer = 5;
-                //bug.say(sprintf("fdc: command read sector - %s - side: %d - track: %d - sector: %d - sector count: %d - addr: $%06x", selectedDrive, driveSide, trackNo, sectorNo, sectorCount, dmaAddr));
+                bug.say(sprintf("fdc: command read sector - %s - side: %d - track: %d - sector: %d - sector count: %d - addr: $%06x", selectedDrive, driveSide, trackNo, sectorNo, sectorCount, dmaAddr));
                 dmaStatusReg = 1 | (sectorCount ? 2 : 0);
                 mfp.setFloppyGpio();
                 break;
@@ -247,9 +247,9 @@ EstyJs.fdc = function (opts) {
                 if (commandCompleteTimer > 0) {
                     commandCompleteTimer = 0;
                     aborted = true;
-                    mfp.setFloppyGpio();
-                    return;
                 }
+                mfp.setFloppyGpio();
+                return;
                 break;
             case 0xe0:
                 bug.say("fdc process command - read track");
@@ -426,7 +426,7 @@ EstyJs.fdc = function (opts) {
             if (!commandCompleteTimer && !aborted) {
                 var status;
 
-                //bug.say("command complete");
+                bug.say("command complete");
 
                 //command complete trigger interrupt and transfer data if appropriate
                 switch (commandNo & 0xf0) {

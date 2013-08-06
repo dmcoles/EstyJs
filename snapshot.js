@@ -111,13 +111,14 @@ EstyJs.SnapshotFile = function (opts) {
         var repeatvalue = 0;
         memoffset += 2;
         var o = rambanksize1 + rambanksize2;
-        membuff = new Uint8Array(o);
+        membuff = new ArrayBuffer(o);
+		memDataView = new DataView(membuff);
         while (memvalue != 0xffff) {
             if (memvalue < 0x8000) {
                 for (var i = 0; i < memvalue; i++) {
                     o -= 2;
-                    membuff[o + 1] = (readByte(buffer, memoffset));
-                    membuff[o] = (readByte(buffer, memoffset + 1));
+                    memDataView.setUint8(o + 1,(readByte(buffer, memoffset)));
+                    memDataView.setUint8(o,(readByte(buffer, memoffset + 1)));
                     memoffset += 2;
                 }
             }
@@ -127,8 +128,8 @@ EstyJs.SnapshotFile = function (opts) {
                 memoffset += 2;
                 for (var i = 0; i < (memvalue & 0x7fff); i++) {
                     o -= 2;
-                    membuff[o + 1] = (repeatvalue1);
-                    membuff[o] = (repeatvalue2);
+                    memDataView.setUint8(o + 1,repeatvalue1);
+                    memDataView.setUint8(o,repeatvalue2);
                 }
             }
             var memvalue = readWord(buffer, memoffset);

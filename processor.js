@@ -1829,7 +1829,7 @@ EstyJs.Processor = function (opts) {
     function I_BCHG(p) {
         var dz = p.d.m == M_rdd ? 4 : 1;
         var sea = exeaTable[p.s.m](p.s, p.z);
-        var s = ldeaTable[sea.t](sea, p.z);
+        var s = ldeaTable[sea.t](sea, p.z) & 0xffff;
         var dea = exeaTable[p.d.m](p.d, dz);
         var d = ldeaTable[dea.t](dea, dz);
         var m = (1 << (s % (p.d.m == M_rdd ? 32 : 8))) >>> 0;
@@ -1849,7 +1849,7 @@ EstyJs.Processor = function (opts) {
     function I_BCLR(p) {
         var dz = p.d.m == M_rdd ? 4 : 1;
         var sea = exeaTable[p.s.m](p.s, p.z);
-        var s = ldeaTable[sea.t](sea, p.z);
+        var s = ldeaTable[sea.t](sea, p.z) & 0xffff;
         var dea = exeaTable[p.d.m](p.d, dz);
         var d = ldeaTable[dea.t](dea, dz);
         var m = (1 << (s % (p.d.m == M_rdd ? 32 : 8))) >>> 0;
@@ -1868,7 +1868,7 @@ EstyJs.Processor = function (opts) {
     function I_BSET(p) {
         var dz = p.d.m == M_rdd ? 4 : 1;
         var sea = exeaTable[p.s.m](p.s, p.z);
-        var s = ldeaTable[sea.t](sea, p.z);
+        var s = ldeaTable[sea.t](sea, p.z) & 0xffff;
         var dea = exeaTable[p.d.m](p.d, dz);
         var d = ldeaTable[dea.t](dea, dz);
         var m = (1 << (s % (p.d.m == M_rdd ? 32 : 8))) >>> 0;
@@ -1887,7 +1887,7 @@ EstyJs.Processor = function (opts) {
     function I_BTST(p) {
         var dz = p.d.m == M_rdd ? 4 : 1;
         var sea = exeaTable[p.s.m](p.s, p.z);
-        var s = ldeaTable[sea.t](sea, p.z);
+        var s = ldeaTable[sea.t](sea, p.z) & 0xffff;
         var dea = exeaTable[p.d.m](p.d, dz);
         var d = ldeaTable[dea.t](dea, dz);
         var m = (1 << (s % (p.d.m == M_rdd ? 32 : 8))) >>> 0;
@@ -5221,20 +5221,21 @@ EstyJs.Processor = function (opts) {
     }
 
     function setPC(pc) {
+
         if (pc & 1) {
             BUG.say(sprintf('cpu.setPC() ADDRESS ERROR pc $%08x', pc));
             //AMIGA.cpu.diss(fault.pc, 1);
             //AMIGA.cpu.dump();  
             exception3(pc, 0);
         }
-        else if (pc > 0xffffff) {
-            BUG.say(sprintf('cpu.setPC() BUS ERROR, $%08x > 24bit, reducing address to $%08x', pc, pc & 0xffffff));
+        /*else if (pc > 0xffffff) {
+            //BUG.say(sprintf('cpu.setPC() BUS ERROR, $%08x > 24bit, reducing address to $%08x', pc, pc & 0xffffff));
             //AMIGA.cpu.diss(fault.pc, 1);
             //AMIGA.cpu.dump();  
             //exception2(pc, 0);
             pc &= 0xffffff;
-        }
-        else if (pc < 4) {
+        }*/
+        else if (pc>=0 && pc < 4) {
             BUG.say(sprintf('cpu.setPC() BUS ERROR pc $%08x', pc));
             //AMIGA.cpu.diss(fault.pc, 1);
             //AMIGA.cpu.dump();  

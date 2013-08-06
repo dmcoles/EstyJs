@@ -211,11 +211,13 @@ EstyJs.Memory = function (opts) {
 
     self.setMemSize = function (memSize) {
         defaultRamsize = 1024 * memSize;
-        ram = new Uint8Array(defaultRamsize);
-    }
+        ram = new ArrayBuffer(defaultRamsize);
+		ramDataView = new DataView(ram);
+   }
 
     self.setSnapshotMemory = function (membuff) {
         ram = membuff;
+		ramDataView = new DataView(ram);
     }
 
     return self;

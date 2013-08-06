@@ -7,7 +7,7 @@ EstyJs.Display = function (opts) {
     var memory = opts.memory;
     var output = opts.output;
     var fdc = opts.fdc;
-	var processor = opts.processor;
+    var processor = opts.processor;
 
     var element = document.getElementById(output);
     var context = element.getContext("2d");
@@ -148,7 +148,7 @@ EstyJs.Display = function (opts) {
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
-                    colour = paletteConverted[((m1 & 0x10000) >> 16) | ((m1 & 0x1) << 1) | ((m2 & 0x10000)>> 14) | ((m2 & 0x1) << 3)];
+                    colour = paletteConverted[((m1 & 0x10000) >> 16) | ((m1 & 0x1) << 1) | ((m2 & 0x10000) >> 14) | ((m2 & 0x1) << 3)];
                     data[pixelIndex++] = colour;
                     data[pixelIndex++] = colour;
 
@@ -747,11 +747,13 @@ EstyJs.Display = function (opts) {
             return;
         }
 
-        if (buf8 != null) {
-            optimisedScreenDraw();
-        }
-        else {
-            standardScreenDraw();
+        if (screenRowStart < 0xfffff) {
+            if (buf8 != null) {
+                optimisedScreenDraw();
+            }
+            else {
+                standardScreenDraw();
+            }
         }
 
 
@@ -774,7 +776,7 @@ EstyJs.Display = function (opts) {
     }
 
     self.getCurrentAddress = function () {
-        return screenRowStart +((Math.min(376,Math.max(0,processor.getRowCycleCount()-56))>>4)<<1);
+        return screenRowStart + ((Math.min(376, Math.max(0, processor.getRowCycleCount() - 56)) >> 4) << 1);
     }
 
     self.getSyncMode = function () {
@@ -801,7 +803,7 @@ EstyJs.Display = function (opts) {
         screenMode = val;
     }
 
-    self.setFrameRate = function(val) {
+    self.setFrameRate = function (val) {
         frameRate = val;
     }
 

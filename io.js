@@ -362,7 +362,11 @@ EstyJs.io = function (opts) {
         if (addr == 0xff8800) {
             //PSG register data
             return sound.readRegister();
-        }
+		}
+		
+		if (addr == 0xff8802) {
+			return 0xff;
+		}
 
 
         if ((addr & 0xFFFA00) == 0xFFFA00) {
