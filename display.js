@@ -77,9 +77,9 @@ EstyJs.Display = function (opts) {
         var x = 0;
         var y = self.beamRow;
 
-        convertPalette();
+        //convertPalette();
 
-        switch (screenMode) {
+        switch (screenMode & 3) {
             case 0:
                 //lo-res
                 scrnAddr = screenRowStart;
@@ -289,9 +289,9 @@ EstyJs.Display = function (opts) {
         var x = 0;
         var y = self.beamRow;
 
-        convertPalette();
+        //convertPalette();
 
-        switch (screenMode) {
+        switch (screenMode & 3) {
             case 0:
                 //lo-res
                 scrnAddr = screenRowStart;
@@ -737,6 +737,7 @@ EstyJs.Display = function (opts) {
 
         self.displayOn = true;
 
+        convertPalette();
 
     }
 
@@ -757,7 +758,7 @@ EstyJs.Display = function (opts) {
         }
 
 
-        screenRowStart += widths[screenMode];
+        screenRowStart += widths[screenMode & 3];
 
         self.beamRow++
         rowCount++;
@@ -776,7 +777,7 @@ EstyJs.Display = function (opts) {
     }
 
     self.getCurrentAddress = function () {
-        return screenRowStart +((Math.min(320,Math.max(0,processor.getRowCycleCount()-68))>>2)<<1);
+        return screenRowStart + ((Math.min(320, Math.max(0, processor.getRowCycleCount() - 68)) >> 2) << 1);
     }
 
     self.getSyncMode = function () {

@@ -262,6 +262,14 @@ EstyJs.io = function (opts) {
             return;
         }
 
+        if ((addr & 0xFF8900) == 0xFF8900) {
+            throw "memory error";
+        }
+
+        if ((addr & 0xFF8A00) == 0xFF8A00) {
+            throw "memory error";
+        }
+
         if ((addr & 1) == 0) return;
 
         bug.say(sprintf('invalid io write $%06x', addr));
@@ -362,11 +370,11 @@ EstyJs.io = function (opts) {
         if (addr == 0xff8800) {
             //PSG register data
             return sound.readRegister();
-		}
-		
-		if (addr == 0xff8802) {
-			return 0xff;
-		}
+        }
+
+        if (addr == 0xff8802) {
+            return 0xff;
+        }
 
 
         if ((addr & 0xFFFA00) == 0xFFFA00) {
@@ -396,6 +404,10 @@ EstyJs.io = function (opts) {
 
         if ((addr & 0xFF8A00) == 0xFF8A00) {
             return; //return undefined
+        }
+
+        if ((addr & 0xFF8900) == 0xFF8900) {
+            return 0xff;
         }
 
         bug.say(sprintf('invalid io read $%06x', addr));

@@ -49,29 +49,42 @@ EstyJs.fdc = function (opts) {
         var result = new Object();
 
         var floppyData = null;
+        var possibleTracks = 0;
 
         switch (selectedDrive) {
             case 'A':
                 floppyData = floppyAdata;
                 break;
             case 'B':
-                floppyData = floppyAdata;
+                floppyData = floppyBdata;
                 break;
         }
 
         result.sectors = floppyData[24];
-		
-		if (result.sectors<9 | result.sectors>11 | (floppyData.length / result.sectors != Math.floor(floppyData.length / result.sectors))) {
-			if (floppyData.length / 9 == Math.floor(floppyData.length / 9)) {
-				result.sectors = 9; 
-			}
-			if (floppyData.length / 10 == Math.floor(floppyData.length / 10)) {
-				result.sectors = 10; 
-			}
-			if (floppyData.length / 11 == Math.floor(floppyData.length / 11)) {
-				result.sectors = 11; 
-			}
-		}
+
+        if (result.sectors < 9 | result.sectors > 11 | (floppyData.length / result.sectors != Math.floor(floppyData.length / result.sectors))) {
+            if (floppyData.length / (9 * 512) == Math.floor(floppyData.length / (9 * 512))) {
+                possibleTracks = floppyData.length / 9 / 512;
+                if (possibleTracks > 100) possibleTracks >>= 1;
+                if (possibleTracks < 85) {
+                    result.sectors = 9;
+                }
+            }
+            if (floppyData.length / (10 * 512) == Math.floor(floppyData.length / (10 * 512))) {
+                possibleTracks = floppyData.length / 10 / 512;
+                if (possibleTracks > 100) possibleTracks >>= 1;
+                if (possibleTracks < 85) {
+                    result.sectors = 10;
+                }
+            }
+            if (floppyData.length / (11 * 512) == Math.floor(floppyData.length / (11 * 512))) {
+                possibleTracks = floppyData.length / 11 / 512;
+                if (possibleTracks > 100) possibleTracks >>= 1;
+                if (possibleTracks < 85) {
+                    result.sectors = 11;
+                }
+            }
+        }
 
         result.tracks = floppyData.length / result.sectors / 512;
 
@@ -223,8 +236,20 @@ EstyJs.fdc = function (opts) {
             case 0x90:
                 bug.say(sprintf("fdc: command read sector multiple - %s - side: %d - track: %d - sector: %d - sector count: %d - addr: $%06x", selectedDrive, driveSide, trackNo, sectorNo, sectorCount, dmaAddr));
                 commandCompleteTimer = 5;
-                dmaStatusReg = 1 | (sectorCount ? 2 : 0);
-                mfp.setFloppyGpio();
+                if (selectedDrive != '') {
+                    var diskGeo = getDiskGeometry();
+                    var byteCount = sectorCount * 512;
+
+                    if (sectorCount + sectorNo > diskGeo.sectors) {
+                        byteCount = (diskGeo.sectors - (sectorNo - 1)) * 512;
+                    }
+
+                    //bug.say(sprintf("read from offset $%8x",(((sectorNo-1) + (trackNo * 18) + (driveSide * 9)) * 512)));
+                    for (var i = 0; i < byteCount; i++) {
+                        memory.writeByte(dmaAddr++, getDiskByte(i));
+                    }
+                    mfp.setFloppyGpio();
+                }
                 break;
             case 0xa0:
                 bug.say("fdc process command - write sector");
@@ -248,7 +273,7 @@ EstyJs.fdc = function (opts) {
                     commandCompleteTimer = 0;
                     aborted = true;
                 }
-                mfp.setFloppyGpio();
+                mfp.clearFloppyGpio();
                 return;
                 break;
             case 0xe0:
@@ -287,7 +312,7 @@ EstyJs.fdc = function (opts) {
             case 6:
                 //both drives selected - invalid
                 //bug.say("select both drives, invalid!");
-                selectedDrive = '';
+                selectedDrive = 'A';
                 break;
         }
 
@@ -303,7 +328,7 @@ EstyJs.fdc = function (opts) {
     }
 
     self.setSectorRegisterHi = function (v) {
-        sectorNo = (sectorNo & 0xff) | (v << 8);
+        //sectorNo = (sectorNo & 0xff) | (v << 8);
     }
 
     self.setSectorRegisterLo = function (v) {
@@ -474,27 +499,29 @@ EstyJs.fdc = function (opts) {
                         break;
                     case 0x80:
                         //read data
-                        var byteCount = 512;
-                        //bug.say(sprintf("read from offset $%8x",(((sectorNo-1) + (trackNo * 18) + (driveSide * 9)) * 512)));
-                        for (var i = 0; i < byteCount; i++) {
-                            memory.writeByte(dmaAddr++, getDiskByte(i));
+                        if (selectedDrive != '') {
+                            var byteCount = 512;
+                            //bug.say(sprintf("read from offset $%8x",(((sectorNo-1) + (trackNo * 18) + (driveSide * 9)) * 512)));
+                            for (var i = 0; i < byteCount; i++) {
+                                memory.writeByte(dmaAddr++, getDiskByte(i));
+                            }
+                            status = 0x80; // | (currentTrack() ? 0 : 4) | (diskInserted() ? 0 : 16);
                         }
-                        status = 0x80; // | (currentTrack() ? 0 : 4) | (diskInserted() ? 0 : 16);
+                        else {
+                            bug.say("sector read when no selected drive");
+                            status = 0x90;
+                        }
                         break;
                     case 0x90:
                         //read data multiple
-
-                        var diskGeo = getDiskGeometry();
-                        var byteCount = sectorCount * 512;
-
-                        if (sectorCount + sectorNo > diskGeo.sectors) {
-                            byteCount = (diskGeo.sectors - (sectorNo - 1)) * 512;
+                        if (selectedDrive != '') {
+                            return;
+                        } else {
+                            bug.say("multiple sector read when no selected drive");
+                            status = 0x90;
                         }
 
-                        //bug.say(sprintf("read from offset $%8x",(((sectorNo-1) + (trackNo * 18) + (driveSide * 9)) * 512)));
-                        for (var i = 0; i < byteCount; i++) {
-                            memory.writeByte(dmaAddr++, getDiskByte(i));
-                        }
+                        dmaStatusReg = 1 | (sectorCount ? 2 : 0);
                         status = 0x80; // | (currentTrack() ? 0 : 4) | (diskInserted() ? 0 : 16);
                         break;
 

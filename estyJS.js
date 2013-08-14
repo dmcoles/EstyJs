@@ -124,7 +124,8 @@ function EstyJs(output) {
 					display.processRow();
 					fdc.processRow();
 					sound.processRow();
-					keyboard.processRow();
+					//fix: knightmare - HACK! delay keyboard processing
+					if (!(display.beamRow & 3)) keyboard.processRow();
 					mfp.endRow();
 				}
 				sound.endFrame(soundEnabled);

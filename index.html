@@ -31,7 +31,8 @@
 			$(function() {
 				$("button").button();
 				document.getElementById('selectedFile').addEventListener('change', fileSelected, false);
-				$( "#accordion" ).accordion();
+				document.getElementById('selectedFileB').addEventListener('change', fileSelected2, false);
+				$("#accordion").accordion();
 				estyjs = EstyJs("EstyJsOutput");
 			});
 		</script>
@@ -45,7 +46,7 @@
                 The Atari ST was a 16 bit home computer that was very popular in the late 80's and early 90's.
                 It was the direct competitor of the Commodore Amiga and both machines were based upon the 68000 cpu.
 				<br/><br/>
-                It was first released in 1985 and was very sucessfull in the professional music industry due to having MIDI ports as standard.						
+                It was first released in 1985 and was very sucessful in the professional music industry due to having MIDI ports as standard.						
 			</div>
 			<h3>EstyJS</h3>
 			<div>EstyJS is a javascript based emulator for the Atari ST. I was inspired to write this after completing the first release of my Acorn Electron emulator ElkJS.
@@ -86,12 +87,15 @@
 			<canvas id = "EstyJsOutput" width="640" height="400" >
 			</canvas>
 			<div id = "buttonpanel">
-			<button onclick="reset()" id="btnReset">Reset</button>
+			<small><button onclick="reset()" id="btnReset">Reset</button>
 			<button onclick="pauseResume()" id="btnPause">Pause</button>
 			<button onclick="soundToggle()" id="btnSound">Sound off</button>
-			<button onclick="document.getElementById('selectedFile').click();"  id="btnBrowse">Browse</button>
+			<button onclick="document.getElementById('selectedFile').click();"  id="btnBrowse">Browse (A)</button>
+			<button onclick="document.getElementById('selectedFileB').click();"  id="Button2">Browse (B)</button>
 			<button onclick="openFile()" style="display: none;" id="btnOpen">Open</button>
+            </small>
 			<input type="file" id="selectedFile" accept=".sts,.st" style="display: none;" />
+			<input type="file" id="selectedFileB" accept=".sts,.st" style="display: none;" />
             <br/>
 			<input type="checkbox" id="joystick" checked="checked" onclick="changeJoystick()" >Joystick</input>
             <input type="checkbox" id="ram" checked="checked" onclick="changeRamSize()" >1Meg</input>

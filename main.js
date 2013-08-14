@@ -32,6 +32,21 @@ function fileSelected(evt) {
 	
 }
 
+function fileSelected2(evt) {
+    var files = evt.target.files;
+    if (files.length > 0) {
+        if (files[0].name.lastIndexOf('.') != -1) {
+            var ext = files[0].name.substr(files[0].name.lastIndexOf('.')).toLowerCase();
+            if (ext == '.sts') {
+                estyjs.openSnapshotFile(files[0]);
+            } else if (ext == '.st') {
+                estyjs.openFloppyFile('B', files[0]);
+            }
+        }
+    }
+
+}
+
 function soundToggle() {
 	var sound = estyjs.soundToggle();
 	if (sound) {

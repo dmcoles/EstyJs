@@ -25,7 +25,7 @@ EstyJs.Keyboard = function (opts) {
 
     var mouseMode = 'R';
     //buttons action
-    var mouseAction = 3;
+    var mouseAction = 0;
 
     var port0Mouse = true;
 
@@ -40,9 +40,6 @@ EstyJs.Keyboard = function (opts) {
     //threshold values for keycode mouse reporting
     var mouseXthreshold = 1;
     var mouseYthreshold = 1;
-
-    var mouseRButtonAbsWasDown = false;
-    var mouseLButtonAbsWasDown = false;
 
     var invertY = false;
 
@@ -61,6 +58,11 @@ EstyJs.Keyboard = function (opts) {
     var rightDown = false;
     var oldLeftDown = false;
     var oldRightDown = false;
+
+    var absLeftDownSinceLast = false;
+    var absLeftUpSinceLast = false;
+    var absRightDownSinceLast = false;
+    var absRightUpSinceLast = false;
 
     var resetTime = 0;
 
@@ -176,6 +178,9 @@ EstyJs.Keyboard = function (opts) {
         913: { scancode: 0x72} //	KEYPAD ENTER
     };
 
+    function toBCD(v) {
+        return (Math.floor(v / 10) << 4) + (v % 10);
+    }
 
     function mouseMove(evt) {
         mouseX = evt.pageX - $("#" + output).offset().left;
@@ -191,10 +196,12 @@ EstyJs.Keyboard = function (opts) {
             case 0:
                 evt.stopPropagation();
                 leftDown = true;
+                absLeftDownSinceLast = true;
                 break;
             case 2:
                 evt.stopPropagation();
                 rightDown = true;
+                absRightDownSinceLast = true;
                 break;
         }
         evt.preventDefault();
@@ -208,10 +215,12 @@ EstyJs.Keyboard = function (opts) {
                 evt.stopPropagation();
 
                 leftDown = false;
+                absLeftUpSinceLast = true;
                 break;
             case 2:
                 evt.stopPropagation();
                 rightDown = false;
+                absRightUpSinceLast = true;
                 break;
         }
         evt.preventDefault();
@@ -235,7 +244,7 @@ EstyJs.Keyboard = function (opts) {
         //75 = left cursor, 77 = right cursor, 80 = down, 72 = up
         if (self.KeypadJoystick && (keyCode == 75 || keyCode == 77 || keyCode == 72 || keyCode == 80) || keyCode == 0x1D) {
             switch (keyCode) {
-                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire          
+                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire                        
                 case 72:
                     //up
                     joystickPos |= 1;
@@ -260,10 +269,14 @@ EstyJs.Keyboard = function (opts) {
             }
 
             //if port0mouse joystick sends right mouse click instead of fire
-            if ((keyCode == 0x1d) && (port0Mouse)) {
-                dataOut.push(0xf9 | (leftDown ? 2 : 0)); //mouse buttons
-                dataOut.push(0);
-                dataOut.push(0);
+            if ((keyCode == 0x1d) && port0Mouse) {
+                if (mouseAction == 4 || mouseMode=='K') {
+                    dataOut.push(0x75);
+                } else if (mouseMode=='R') {
+                    dataOut.push(0xf9 | (leftDown ? 2 : 0)); //mouse buttons
+                    dataOut.push(0);
+                    dataOut.push(0);
+                }
             }
 
             if (joystickMode == 'E' && (keyCode != 0x1d | !port0Mouse)) {
@@ -290,7 +303,7 @@ EstyJs.Keyboard = function (opts) {
 
         if (self.KeypadJoystick && (keyCode == 75 || keyCode == 77 || keyCode == 72 || keyCode == 80) || keyCode == 0x1D) {
             switch (keyCode) {
-                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire          
+                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire                        
                 case 72:
                     //up
                     joystickPos &= 0xff - 1;
@@ -315,10 +328,14 @@ EstyJs.Keyboard = function (opts) {
             }
 
             //if port0mouse joystick sends right mouse click instead of fire
-            if ((keyCode == 0x1d) && (port0Mouse)) {
-                dataOut.push(0xf8 | (leftDown ? 2 : 0)); //mouse buttons
-                dataOut.push(0);
-                dataOut.push(0);
+            if ((keyCode == 0x1d) && port0Mouse) {
+                if (mouseAction == 4 || mouseMode=='K') {
+                    dataOut.push(0xf5);
+                } else if (mouseMode=='R') {
+                    dataOut.push(0xf8 | (leftDown ? 2 : 0)); //mouse buttons
+                    dataOut.push(0);
+                    dataOut.push(0);
+                }
             }
 
             if (joystickMode == 'E' && (keyCode != 0x1d | !port0Mouse)) {
@@ -342,6 +359,15 @@ EstyJs.Keyboard = function (opts) {
 
     self.setControl = function (val) {
         control = val;
+        if ((control & 0x3) == 3) {
+            //reset
+            interrupt = false;
+            rxRegisterFull = false;
+            txRegisterEmpty = true;
+            dataOut.length = 0;
+            mfp.setAciaGpio();
+
+        }
     }
 
     self.readControl = function () {
@@ -364,7 +390,7 @@ EstyJs.Keyboard = function (opts) {
         //writeData = cmd;
         keyCommands.push(cmd);
     }
-
+    ;
     self.processRow = function (processor) {
         if (resetTime > 0) {
             resetTime--;
@@ -372,7 +398,9 @@ EstyJs.Keyboard = function (opts) {
                 //self check completed ok.
                 joystickMode = 'E';
                 joystickPos = 0;
+                mouseAction = 0;
                 mouseMode = 'R';
+                port0Mouse = true;
                 dataOut.push(0xF0);
             }
 
@@ -392,6 +420,20 @@ EstyJs.Keyboard = function (opts) {
         }
 
 
+        if (mouseAction == 4) {
+            if (leftDown & !oldLeftDown) dataOut.push(0x74);
+            if (!leftDown & oldLeftDown) dataOut.push(0xf4);
+            if (rightDown & !oldRightDown) dataOut.push(0x75);
+            if (!rightDown & oldRightDown) dataOut.push(0xf5);
+        }
+
+
+        if (joystickMode == 'E' && (leftDown != oldLeftDown) && !port0Mouse) {
+            //fe = joystick 0, ff = joystick 1
+            dataOut.push(0xfe);
+            dataOut.push(leftDown ? 128 : 0)
+        }
+
         if (mouseMode == 'R' && !resetTime && port0Mouse) {
             var xd = (mouseX - oldMouseX) >> 1;
             var yd = (mouseY - oldMouseY) >> 1;
@@ -407,8 +449,6 @@ EstyJs.Keyboard = function (opts) {
 
                 oldMouseX = mouseX;
                 oldMouseY = mouseY;
-                oldLeftDown = leftDown;
-                oldRightDown = rightDown;
             }
         }
 
@@ -520,14 +560,15 @@ EstyJs.Keyboard = function (opts) {
                     //interrogate mouse position
                     port0Mouse = true;
                     dataOut.push(0xf7);
-                    dataOut.push(0 | (!leftDown & mouseLButtonAbsWasDown ? 8 : 0) | (leftDown & !mouseLButtonAbsWasDown ? 4 : 0) | (!rightDown & mouseRButtonAbsWasDown ? 2 : 0) | (rightDown & !mouseRButtonAbsWasDown ? 1 : 0));
+                    dataOut.push(0 | (absLeftUpSinceLast ? 8 : 0) | (absLeftDownSinceLast ? 4 : 0) | (absRightUpSinceLast ? 2 : 0) | (absRightDownSinceLast ? 1 : 0));
                     dataOut.push(Math.floor((mouseX / $("#" + output).width() * mouseXmax) >> 8));
                     dataOut.push(Math.floor((mouseX / $("#" + output).width() * mouseXmax) & 0xff));
                     dataOut.push(Math.floor((mouseY / $("#" + output).height() * mouseYmax) >> 8));
                     dataOut.push(Math.floor((mouseY / $("#" + output).height() * mouseYmax) & 0xff));
-
-                    mouseRButtonAbsWasDown = rightDown;
-                    mouseLButtonAbsWasDown = leftDown;
+                    absLeftDownSinceLast = false;
+                    absLeftUpSinceLast = false;
+                    absRightDownSinceLast = false;
+                    absRightUpSinceLast = false;
 
                     break;
                 case 0x0E:
@@ -574,7 +615,7 @@ EstyJs.Keyboard = function (opts) {
                     break;
                 case 0x16:
                     //interrogate joystick
-                    port0Mouse = false;
+                    //port0Mouse = false;
                     dataOut.push(0xfd);
                     dataOut.push(0);
                     dataOut.push(joystickPos);
@@ -616,7 +657,14 @@ EstyJs.Keyboard = function (opts) {
                     break;
                 case 0x1C:
                     //query time of day clock
-                    //not implemented
+                    var currDate = new Date();
+                    dataOut.push(0xfc);
+                    dataOut.push(toBCD(currDate.getFullYear() % 100));
+                    dataOut.push(toBCD(currDate.getMonth() + 1));
+                    dataOut.push(toBCD(currDate.getDate()));
+                    dataOut.push(toBCD(currDate.getHours()));
+                    dataOut.push(toBCD(currDate.getMinutes()));
+                    dataOut.push(toBCD(currDate.getSeconds()));
                     break;
 
                 case 0x20:
@@ -727,6 +775,8 @@ EstyJs.Keyboard = function (opts) {
 
         }
 
+        oldLeftDown = leftDown;
+        oldRightDown = rightDown;
     }
 
     document.onkeydown = keyDown;

@@ -1,3 +1,4 @@
+
 // 68000 cpu emulator code for EstyJs
 // adapted from SAE - Scripted Amiga Emulator by Darren Coles
 
@@ -43,6 +44,9 @@ EstyJs.Processor = function (opts) {
     var SPCFLAG_TRACE = false;
     var SPCFLAG_DOTRACE = false;
 
+    var prefetch1 = 0;
+    var prefetch2 = 0;
+
     var M_rdd = 1; /* Register Direct Data */
     var M_rda = 2; /* Register Direct Address */
     var M_ria = 3; /* Register Indirect Address */
@@ -62,6 +66,7 @@ EstyJs.Processor = function (opts) {
     var T_AD = 3; /* Address */
     var T_IM = 4; /* Immediate */
 
+    var SAEE_CPU_Internal = 1;
     var ccNames = ['T', 'F', 'HI', 'LS', 'CC', 'CS', 'NE', 'EQ', 'VC', 'VS', 'PL', 'MI', 'GE', 'LT', 'GT', 'LE'];
 
     /* Effective Address */
@@ -106,6 +111,19 @@ EstyJs.Processor = function (opts) {
         this.num = num;
     }
     Exception23.prototype = new Error;
+
+    function FatalError(err, msg) {
+        this.error = err;
+        this.message = msg;
+    }
+    FatalError.prototype = new Error;
+
+    function Fatal(err, msg) {
+        //alert(str);
+        throw new FatalError(err, msg);
+    }
+
+
 
     /*-----------------------------------------------------------------------*/
 
@@ -250,25 +268,33 @@ EstyJs.Processor = function (opts) {
 
 
     function nextOPCode() {
-        var op = memory.readWord(regs.pc);
+        var op = prefetch1;
+        prefetch1 = prefetch2;
         fault.pc = regs.pc;
         fault.op = op;
         regs.pc += 2;
+        prefetch2 = memory.readWord(regs.pc + 2);
         return op;
     }
     function nextIByte() {
-        var r = memory.readByte(regs.pc + 1);
+        var r = prefetch1 & 0xff;
+        prefetch1 = prefetch2;
         regs.pc += 2;
+        prefetch2 = memory.readWord(regs.pc + 2);
         return r;
     }
     function nextIWord() {
-        var r = memory.readWord(regs.pc);
+        var r = prefetch1;
+        prefetch1 = prefetch2;
         regs.pc += 2;
+        prefetch2 = memory.readWord(regs.pc+2);
         return r;
     }
     function nextILong() {
         var r = memory.readLong(regs.pc);
         regs.pc += 4;
+        prefetch1 = memory.readWord(regs.pc);
+        prefetch2 = memory.readWord(regs.pc+2);
         return r;
     }
 
@@ -527,6 +553,7 @@ EstyJs.Processor = function (opts) {
 
     function ldEA_T_RA(ea, z) {
         switch (z) {
+            case 1: return regs.a[ea.a] & 0xff;
             case 2: return regs.a[ea.a] & 0xffff;
             case 4: return regs.a[ea.a];
             default:
@@ -1280,10 +1307,10 @@ EstyJs.Processor = function (opts) {
         regs.c = false;
         if (s == 0) {
             BUG.say(sprintf('I_DIVS NULL $%08x / $%08x', d, s));
-            regs.pc = fault.pc;
+            //regs.pc = fault.pc;
             return exception(5);
         } else {
-            var quo = Math.floor(d / s);
+            var quo = ~~(d / s); //perform double not to convert from float to int without rounding
 
             if (quo < 0) quo += 0x10000;
 
@@ -1318,10 +1345,10 @@ EstyJs.Processor = function (opts) {
         regs.c = false;
         if (s == 0) {
             BUG.say(sprintf('I_DIVU NULL $%08x / $%08x', d, s));
-            regs.pc = fault.pc;
+            //regs.pc = fault.pc;
             return exception(5);
         } else {
-            var quo = Math.floor(d / s);
+            var quo = ~~(d / s); //perform double not to convert from float to int without rounding
 
             if (quo > 0xffff) {
                 regs.v = true;
@@ -2214,7 +2241,7 @@ EstyJs.Processor = function (opts) {
             setSR(r);
             return p.cyc;
         } else {
-            //BUG.say('I_ANDI_SR PRIVILIG VIOLATION');
+            BUG.say('I_ANDI_SR PRIVILIG VIOLATION');
             regs.pc = fault.pc;
             return exception(8);
         }
@@ -2230,7 +2257,7 @@ EstyJs.Processor = function (opts) {
             setSR(r);
             return p.cyc;
         } else {
-            //BUG.say('I_EORI_SR PRIVILIG VIOLATION');
+            BUG.say('I_EORI_SR PRIVILIG VIOLATION');
             regs.pc = fault.pc;
             return exception(8);
         }
@@ -2246,7 +2273,7 @@ EstyJs.Processor = function (opts) {
             setSR(r);
             return p.cyc;
         } else {
-            //BUG.say('I_ORI_SR PRIVILIG VIOLATION');
+            BUG.say('I_ORI_SR PRIVILIG VIOLATION');
             regs.pc = fault.pc;
             return exception(8);
         }
@@ -2260,7 +2287,7 @@ EstyJs.Processor = function (opts) {
             setSR(sr);
             return p.cyc;
         } else {
-            //BUG.say('I_MOVE_2SR PRIVILIG VIOLATION');						
+            BUG.say('I_MOVE_2SR PRIVILIG VIOLATION');
             regs.pc = fault.pc;
             return exception(8);
         }
@@ -2285,7 +2312,7 @@ EstyJs.Processor = function (opts) {
             steaTable[dea.t](dea, p.z, regs.usp);
             return p.cyc;
         } else {
-            //BUG.say('I_MOVE_USP PRIVILIG VIOLATION');						
+            BUG.say('I_MOVE_USP PRIVILIG VIOLATION');
             regs.pc = fault.pc;
             return exception(8);
         }
@@ -2297,7 +2324,7 @@ EstyJs.Processor = function (opts) {
             regs.usp = ldeaTable[sea.t](sea, p.z);
             return p.cyc;
         } else {
-            //BUG.say('I_MOVE_USP PRIVILIG VIOLATION');						
+            BUG.say('I_MOVE_USP PRIVILIG VIOLATION');
             regs.pc = fault.pc;
             return exception(8);
         }
@@ -2367,7 +2394,7 @@ EstyJs.Processor = function (opts) {
 
             return p.cyc;
         } else {
-            //BUG.say('I_RESET PRIVILIG VIOLATION');
+            BUG.say('I_RESET PRIVILIG VIOLATION');
             regs.pc = fault.pc;
             return exception(8);
         }
@@ -2382,7 +2409,7 @@ EstyJs.Processor = function (opts) {
             setPC(pc);
             return p.cyc;
         } else {
-            //BUG.say('I_RTE PRIVILEG VIOLATION');		
+            BUG.say('I_RTE PRIVILEG VIOLATION');
             regs.pc = fault.pc;
             return exception(8);
         }
@@ -2401,6 +2428,7 @@ EstyJs.Processor = function (opts) {
             //BUG.say(sprintf('I_STOP() new sr $%04x', regs.sr));
             return p.cyc;
         } else {
+            BUG.say('I_STOP PRIVILIG VIOLATION');
             regs.pc = fault.pc;
             return exception(8);
         }
@@ -2673,7 +2701,7 @@ EstyJs.Processor = function (opts) {
                         for (mr = 0; mr < 64; mr++) {
                             ea = mkEA(mr, en, 0);
                             if (ea[0] != -1) {
-                                if (dir == 0 && ea[1] == M_rda && z == 0) continue; //An word and long only
+                                //if (dir == 0 && ea[1] == M_rda && z == 0) continue; //An word and long only
 
                                 op = (13 << 12) | (Dn << 9) | (dir << 8) | (z << 6) | ea[0];
 
@@ -2759,7 +2787,7 @@ EstyJs.Processor = function (opts) {
                     for (mr = 0; mr < 64; mr++) {
                         ea = mkEA(mr, en, 0);
                         if (ea[0] != -1) {
-                            if (ea[1] == M_rda && z == 0) continue; //An word and long only
+                            //if (ea[1] == M_rda && z == 0) continue; //An word and long only
 
                             op = (5 << 12) | (id << 9) | (z << 6) | ea[0];
                             cyc = ea[1] == M_rda ? [8, 1, 0] : (ea[1] == M_rdd ? (z2 == 4 ? [8, 1, 0] : [4, 1, 0]) : (z2 == 4 ? [12, 1, 2] : [8, 1, 1]));
@@ -3212,7 +3240,7 @@ EstyJs.Processor = function (opts) {
                     for (mr = 0; mr < 64; mr++) {
                         ea = mkEA(mr, en, 0);
                         if (ea[0] != -1) {
-                            if (ea[1] == M_rda && z == 0) continue; //An word and long only
+                            //if (ea[1] == M_rda && z == 0) continue; //An word and long only
 
                             op = (11 << 12) | (Dn << 9) | (z << 6) | ea[0];
 
@@ -3709,8 +3737,8 @@ EstyJs.Processor = function (opts) {
                         for (smr = 0; smr < 64; smr++) {
                             sea = mkEA(smr, sen, 0);
                             if (sea[0] != -1) {
-                                if (sea[1] == M_rda && z == 0) //For byte size operation, address register direct is not allowed.
-                                    continue;
+                                //if (sea[1] == M_rda && z == 0) //For byte size operation, address register direct is not allowed.
+                                //    continue;
 
                                 op = (z3 << 12) | (dea[0] << 6) | sea[0];
 
@@ -4507,8 +4535,8 @@ EstyJs.Processor = function (opts) {
                         for (mr = 0; mr < 64; mr++) {
                             ea = mkEA(mr, en, 0);
                             if (ea[0] != -1) {
-                                if (dir == 0 && ea[1] == M_rda && z == 0) //For byte-sized operation, address register direct is not allowed
-                                    continue;
+                                //if (dir == 0 && ea[1] == M_rda && z == 0) //For byte-sized operation, address register direct is not allowed
+                                //    continue;
 
                                 op = (9 << 12) | (Dn << 9) | (dir << 8) | (z << 6) | ea[0];
 
@@ -4594,7 +4622,7 @@ EstyJs.Processor = function (opts) {
                     for (mr = 0; mr < 64; mr++) {
                         ea = mkEA(mr, en, 0);
                         if (ea[0] != -1) {
-                            if (ea[1] == M_rda && z == 0) continue; //An word and long only
+                            //if (ea[1] == M_rda && z == 0) continue; //An word and long only
 
                             op = (5 << 12) | (id << 9) | (1 << 8) | (z << 6) | ea[0];
                             cyc = ea[1] == M_rda ? [8, 1, 0] : (ea[1] == M_rdd ? (z2 == 4 ? [8, 1, 0] : [4, 1, 0]) : (z2 == 4 ? [12, 1, 2] : [8, 1, 1]));
@@ -5229,13 +5257,13 @@ EstyJs.Processor = function (opts) {
             exception3(pc, 0);
         }
         /*else if (pc > 0xffffff) {
-            //BUG.say(sprintf('cpu.setPC() BUS ERROR, $%08x > 24bit, reducing address to $%08x', pc, pc & 0xffffff));
-            //AMIGA.cpu.diss(fault.pc, 1);
-            //AMIGA.cpu.dump();  
-            //exception2(pc, 0);
-            pc &= 0xffffff;
+        //BUG.say(sprintf('cpu.setPC() BUS ERROR, $%08x > 24bit, reducing address to $%08x', pc, pc & 0xffffff));
+        //AMIGA.cpu.diss(fault.pc, 1);
+        //AMIGA.cpu.dump();  
+        //exception2(pc, 0);
+        pc &= 0xffffff;
         }*/
-        else if (pc>=0 && pc < 4) {
+        else if (pc >= 0 && pc < 4) {
             BUG.say(sprintf('cpu.setPC() BUS ERROR pc $%08x', pc));
             //AMIGA.cpu.diss(fault.pc, 1);
             //AMIGA.cpu.dump();  
@@ -5243,6 +5271,8 @@ EstyJs.Processor = function (opts) {
             //AMIGA.state = 0;
         }
         regs.pc = pc;
+        prefetch1 = memory.readWord(pc);
+        prefetch2 = memory.readWord(pc+2);
     }
 
     function exception_trace(n) {
@@ -5306,18 +5336,20 @@ EstyJs.Processor = function (opts) {
             BUG.col = 2;
         }
 
+
+
         if (n == 2) {
             BUG.say(sprintf('cpu.exception() %d, regs.pc $%08x, fault.pc $%08x, fault.op $%04x, fault.ad $%08x, fault.ia %d', n, regs.pc, fault.pc, fault.op, fault.ad, fault.ia ? 1 : 0));
 
             //stEA(exEA(new effAddr(M_ripr, 7), 4), 4, regs.pc);
             //stEA(exEA(new effAddr(M_ripr, 7), 2), 2, sr);
-			
-			stEA(exEA(new effAddr(M_ripr, 7), 4), 4, regs.pc);
+
+            stEA(exEA(new effAddr(M_ripr, 7), 4), 4, regs.pc);
             stEA(exEA(new effAddr(M_ripr, 7), 2), 2, sr);
             stEA(exEA(new effAddr(M_ripr, 7), 2), 2, fault.op);
             stEA(exEA(new effAddr(M_ripr, 7), 4), 4, fault.ad);
             stEA(exEA(new effAddr(M_ripr, 7), 2), 2, cd);
-			
+
         } else if (n == 3) {
             BUG.say(sprintf('cpu.exception() %d, regs.pc $%08x, fault.pc $%08x, fault.op $%04x, fault.ad $%08x, fault.ia %d', n, regs.pc, fault.pc, fault.op, fault.ad, fault.ia ? 1 : 0));
 
@@ -5325,7 +5357,7 @@ EstyJs.Processor = function (opts) {
             var wa = 0;
             var cd = (wa ? 0 : 16) | (olds ? 4 : 0) | (ia ? 2 : 1);
 
-            stEA(exEA(new effAddr(M_ripr, 7), 4), 4, fault.pc);
+            stEA(exEA(new effAddr(M_ripr, 7), 4), 4, regs.pc);
             stEA(exEA(new effAddr(M_ripr, 7), 2), 2, sr);
             stEA(exEA(new effAddr(M_ripr, 7), 2), 2, fault.op);
             stEA(exEA(new effAddr(M_ripr, 7), 4), 4, fault.ad);
@@ -5350,7 +5382,8 @@ EstyJs.Processor = function (opts) {
         //AMIGA.cpu.dump();  
         exception2(pc, 0);		
         }*/
-        regs.pc = pc;
+        setPC(pc);
+        //regs.pc = pc;
 
         exception_trace(n);
         return exception_cycles(n);
@@ -5488,6 +5521,8 @@ EstyJs.Processor = function (opts) {
         regs.isp = 0;
         regs.a[7] = memory.readLong(addr);
         regs.pc = memory.readLong(addr + 4);
+        prefetch1 = memory.readWord(regs.pc);
+        prefetch2 = memory.readWord(regs.pc+2);
         regs.stopped = false;
 
         BUG.say(sprintf('cpu.reset() addr 0x%08x, A7 0x%08x, PC 0x%08x', addr, regs.a[7], regs.pc));
@@ -5499,7 +5534,7 @@ EstyJs.Processor = function (opts) {
         while (tot_cycles < frameRowCycles) {
             //AMIGA.events.cycle(cpu_cycles);
 
-			pendingInterrupts[6] = mfp.doInterrupts(self);
+            pendingInterrupts[6] = mfp.doInterrupts(self);
 
             for (var i = 6; i > 0; i--) {
                 if (pendingInterrupts[i] && i > regs.intmask) {
@@ -5507,15 +5542,16 @@ EstyJs.Processor = function (opts) {
                     interrupt(i);
                 }
             }
-			
-			if (regs.stopped) {
-				tot_cycles+=4;
-				continue;
-			}
-			
-            var op = nextOPCode();
-            var lastPc = regs.pc;
+
+            if (regs.stopped) {
+                tot_cycles += 4;
+                continue;
+            }
+
             try {
+                var op = nextOPCode();
+                var lastPc = regs.pc;
+
                 var cycles = iTab[op].f(iTab[op].p);
                 cpu_cycles = cycles[0];
             } catch (e) {
@@ -5524,15 +5560,15 @@ EstyJs.Processor = function (opts) {
                     var cycles = exception(e.num);
                     cpu_cycles = cycles[0];
                 }
+                else if (e instanceof FatalError) {
+                    BUG.info('cpu.cycle_real() FATAL ERROR [%s]', e);
+                    Fatal(e.error, e.message);
+                }
                 /*else if (e instanceof VSync) { 
                 //BUG.info('cpu.cycle_real() VSYNC [%s]', e);
                 cpu_cycles = 48 * cpu_cycle_unit;	
                 throw new VSync(e.error, e.message);
                 } 
-                else if (e instanceof FatalError) { 
-                //BUG.info('cpu.cycle_real() FATAL ERROR [%s]', e);
-                Fatal(e.error, e.message);
-                }
                 else {  				
                 Fatal(SAEE_CPU_Internal, e.message);
                 }*/
@@ -5543,9 +5579,9 @@ EstyJs.Processor = function (opts) {
             if (SPCFLAG_TRACE) trace();
 
 
-            tot_cycles += ((cpu_cycles+3)&0xfffc);
+            tot_cycles += ((cpu_cycles + 3) & 0xfffc);
 
-            
+
 
         }
 

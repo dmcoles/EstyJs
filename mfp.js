@@ -125,12 +125,12 @@ EstyJs.mfp = function (opts) {
             //timer A control
 
             //when timer is started load counter from data
-            if (timerAcontrol == 0 && val != 0) {
+            if (timerAcontrol != val) {
                 timerAcntr = timerAdata;
             }
 
             timerAcontrol = val;
-            switch (val) {
+            switch (val&0xf) {
                 case 0:
                     timerAcntr2 = 0;
                     timerAdiv = 1;
@@ -167,12 +167,12 @@ EstyJs.mfp = function (opts) {
             //timer B control
 
             //when timer is started load counter from data
-            if (timerBcontrol == 0 && val != 0) {
+            if (timerBcontrol != val) {
                 timerBcntr = timerBdata;
             }
 
             timerBcontrol = val;
-            switch (val) {
+            switch (val&0xf) {
                 case 0:
                     timerBcntr2 = 0;
                     timerBdiv = 1;
@@ -207,7 +207,7 @@ EstyJs.mfp = function (opts) {
         if ((addr == 0xFFFA1F)) {
             //timer A data
             timerAdata = val;
-            if (!timerAcontrol) timerAcntr = val;
+            if (!(timerAcontrol&0xf)) timerAcntr = val;
             timerAcntr2 = 0;
             return;
         }
@@ -215,13 +215,24 @@ EstyJs.mfp = function (opts) {
         if ((addr == 0xFFFA21)) {
             //timer B data
             timerBdata = val;
-            if (!timerBcontrol) timerBcntr = val;
+            if (!(timerBcontrol&0xf)) timerBcntr = val;
             timerBcntr2 = 0;
             return;
         }
 
         if (addr == 0xFFFA1D) {
             //timer C + D control
+
+            //when timer is started load counter from data
+            if (timerCcontrol != ((val & 0x70) >>> 4)) {
+                timerCcntr = timerCdata;
+            }
+
+            //when timer is started load counter from data
+            if (timerDcontrol != (val & 7)) {
+                timerDcntr = timerDdata;
+            }
+
             timerDcontrol = val & 7;
             timerCcontrol = (val & 0x70) >>> 4;
 
@@ -285,7 +296,7 @@ EstyJs.mfp = function (opts) {
         if (addr == 0xFFFA23) {
             //timer C data
             timerCdata = val;
-            timerCcntr = val;
+            if (!timerCcontrol) timerCcntr = val;
             timerCcntr2 = 0;
             return;
         }
@@ -293,7 +304,7 @@ EstyJs.mfp = function (opts) {
         if (addr == 0xFFFA25) {
             //timer D data
             timerDdata = val;
-            timerDcntr = val;
+            if (!timerDcontrol) timerDcntr = val;
             timerDcntr2 = 0;
             return;
         }
@@ -346,7 +357,7 @@ EstyJs.mfp = function (opts) {
         }
 
         if (addr == 0xFFFA17) {
-            return (autoInterruptEnd ? 8 : 0) | (vectorReg << 4);
+            return (autoInterruptEnd ? 0 : 8) | (vectorReg << 4);
         }
 
 
@@ -395,46 +406,9 @@ EstyJs.mfp = function (opts) {
 
     }
 
-    self.startRow = function () {
+    self.startRow = function () {       
 
-        //event count or pulse width
-        /*if (timerAcontrol >=8 && display.displayOn) {
-        timerAcntr2++;
-        if (timerAcntr2>=timerAdiv) {
-        timerAcntr2 = 0;
-        timerAcntr = (timerAcntr-1)&0xff;
-			
-        //do event when timer A reaches 0
-        if (timerAcntr==0) {
-        timerAcntr = timerAdata;
-					
-        if ((interruptEnableA & 32)!=0) {
-        self.interruptRequest(13);
-        }
-        }
-        }
-        }
-
-        //event count or pulse width
-        if (timerBcontrol >=8 && display.displayOn) {
-        timerBcntr2++;
-        if (timerBcntr2>=timerBdiv) {
-        timerBcntr2 = 0;
-        timerBcntr = (timerBcntr-1)&0xff;
-			
-        //do event when timer B reaches 0
-        if (timerBcntr==0) {
-        timerBcntr = timerBdata;
-					
-        if ((interruptEnableA & 1)!=0) {
-        self.interruptRequest(8);
-        }
-        }
-        }
-        }
-        */
-
-        if (timerAcontrol > 0 && timerAcontrol < 8) {
+        if ((timerAcontrol&0xf) > 0 && (timerAcontrol&0xf) < 8) {
             timerAcntr2 += 512;
 
             while (timerAcntr2 >= timerAdiv * clockCyclesPerCpuCycle) {
@@ -453,7 +427,7 @@ EstyJs.mfp = function (opts) {
             }
         }
 
-        if (timerBcontrol > 0 && timerBcontrol < 8) {
+        if ((timerBcontrol&0xf) > 0 && (timerBcontrol&0xf) < 8) {
             timerBcntr2 += 512;
 
             while (timerBcntr2 >= timerBdiv * clockCyclesPerCpuCycle) {
@@ -513,7 +487,7 @@ EstyJs.mfp = function (opts) {
 
     self.endRow = function () {
         //event count or pulse width
-        if (timerAcontrol >= 8 && display.displayOn) {
+        if ((timerAcontrol&0xf) >= 8 && display.displayOn) {
             timerAcntr2++;
             if (timerAcntr2 >= timerAdiv) {
                 timerAcntr2 = 0;
@@ -531,7 +505,7 @@ EstyJs.mfp = function (opts) {
         }
 
         //event count or pulse width
-        if (timerBcontrol >= 8 && display.displayOn) {
+        if ((timerBcontrol&0xf) >= 8 && display.displayOn) {
             timerBcntr2++;
             if (timerBcntr2 >= timerBdiv) {
                 timerBcntr2 = 0;
