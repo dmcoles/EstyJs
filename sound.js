@@ -47,6 +47,7 @@ EstyJs.Sound = function (opts) {
 
     var audioOutput = null;
     var audioBuffer = null;
+    var audioBuffer2 = null;
 
     var soundEnabled = true;
 
@@ -62,6 +63,7 @@ EstyJs.Sound = function (opts) {
     var WCount = 0;
     var lCounter = 0;
 
+    var lastWritten = new Date();
 
     //ay stuff
     var MAX_OUTPUT = 63;
@@ -144,6 +146,7 @@ EstyJs.Sound = function (opts) {
         audioOutput = new Audio();
         if (typeof (audioOutput.mozSetup) != 'undefined') {
             audioBuffer = new Array();
+            audioBuffer2 = new Array();
             audioOutput.mozSetup(1, samplesPerFrame * 50);
         } else {
             audioOutput = null;
@@ -714,35 +717,59 @@ EstyJs.Sound = function (opts) {
 
     function fillBuffer(outputArray) {
         var n = outputArray.length;
-        var i = 0;
-        var i2 = 0;
+        var n2 = audioBuffer.length;
         if (!soundEnabled) {
+            n2 = 0;
+        }
+
+        if (audioBuffer.length < n) {
+            for (var i = 0; i < n; i++) {
+                outputArray[i] = audioBuffer[~ ~(i * n2 / n)];
+            }
             audioBuffer.length = 0;
-            return;
+        } else {
+            for (var i = 0; i < n; i++) {
+                outputArray[i] = audioBuffer[i];
+            }
+            audioBuffer.splice(0, n);
         }
 
-        while ((audioBuffer.length + i) < n) {
-            outputArray[i++] = 0;
+
+
+    }
+
+    function resampleBuffer(count) {
+        var newBuffer = new Array();
+
+        for (var i = 0; i < count; i++) {
+            newBuffer.push(audioBuffer[~ ~(i / count * audioBuffer.length)]);
         }
 
-        while (i < n) {
-            outputArray[i++] = audioBuffer[i2++];
-        }
-
-        audioBuffer.splice(0, i2);
-
+        audioBuffer = newBuffer;
     }
 
     function writeSampleData(soundIsEnabled) {
         soundEnabled = soundIsEnabled;
         if (audioBuffer != null) {
             if (!soundEnabled) {
-                audioBuffer = new Array();
+                audioBuffer.length = 0;
             }
 
-            if (frameCount >= 5 & audioOutput != null) {
+            if (audioOutput != null) {
+
+                var currTime = new Date();
+                samplesNeeded = ~ ~(sampleRate / (1000 / (currTime - lastWritten)));
+
+                if (audioBuffer.length < samplesNeeded) resampleBuffer(samplesNeeded);
+
+                //audioBuffer2 = audioBuffer2.concat(audioBuffer);
+                //audioBuffer = new Array();
+
+                lastWritten = currTime;
+
                 numberSamplesWritten = audioOutput.mozWriteAudio(audioBuffer);
-                audioBuffer.splice(0, numberSamplesWritten);
+                //audioBuffer2.splice(0, numberSamplesWritten);
+                audioBuffer.length = 0;
             }
         }
 
@@ -751,7 +778,7 @@ EstyJs.Sound = function (opts) {
 
     function handleAySound(size) {
         if (audioBuffer != null) {
-            size = Math.floor(size);
+            size = ~ ~(size);
             while (size--) {
                 WCount++;
                 if (WCount == 25) {

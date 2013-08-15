@@ -165,6 +165,25 @@ function EstyJs(output) {
         fdc.loadFile(drive,file);
     }
 
+    self.openZipFile = function (drive, file) {
+        function zipCallback(files) {
+            for (var i = 0; i < files.length; i++) {
+                var fname = files[i];
+                var ext = fname.substr(fname.lastIndexOf('.')).toLowerCase();
+                if (ext == '.sts') {
+                    snapshot.loadSnapshot(file); 
+                    break;
+                }
+                if (ext == '.st') {
+                    fdc.loadFile(drive, file);
+                    break;
+                }
+            }
+        }
+
+        fileManager.getZipFilenames(file,zipCallback);
+    }
+
     self.setJoystick = function (joyEnabled) {
 		keyboard.KeypadJoystick = joyEnabled;
 	}

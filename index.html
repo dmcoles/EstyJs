@@ -25,6 +25,8 @@
 		<script src="sound.js"></script>
 		<script src="main.js"></script>
         <script src="files.js"></script>
+        <script src="js-unzip.js"></script>
+        <script src="rawinflate.js"></script>
 		
 
 		<script>
@@ -94,8 +96,8 @@
 			<button onclick="document.getElementById('selectedFileB').click();"  id="Button2">Browse (B)</button>
 			<button onclick="openFile()" style="display: none;" id="btnOpen">Open</button>
             </small>
-			<input type="file" id="selectedFile" accept=".sts,.st" style="display: none;" />
-			<input type="file" id="selectedFileB" accept=".sts,.st" style="display: none;" />
+			<input type="file" id="selectedFile" accept=".sts,.st,.msa,.zip" style="display: none;" />
+			<input type="file" id="selectedFileB" accept=".sts,.st,.msa,.zip" style="display: none;" />
             <br/>
 			<input type="checkbox" id="joystick" checked="checked" onclick="changeJoystick()" >Joystick</input>
             <input type="checkbox" id="ram" checked="checked" onclick="changeRamSize()" >1Meg</input>

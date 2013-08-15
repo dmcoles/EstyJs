@@ -396,11 +396,6 @@ EstyJs.Keyboard = function (opts) {
             resetTime--;
             if (!resetTime) {
                 //self check completed ok.
-                joystickMode = 'E';
-                joystickPos = 0;
-                mouseAction = 0;
-                mouseMode = 'R';
-                port0Mouse = true;
                 dataOut.push(0xF0);
             }
 
@@ -517,6 +512,12 @@ EstyJs.Keyboard = function (opts) {
                     var keyCmd2 = keyCommands.shift();
 
                     if (keyCmd2 != 1) return;
+                    joystickMode = 'E';
+                    joystickPos = 0;
+                    mouseAction = 0;
+                    mouseMode = 'R';
+                    port0Mouse = true;
+
                     resetTime = 400;
                     break;
 

@@ -37,12 +37,64 @@ EstyJs.fdc = function (opts) {
     var commandCompleteTimer = 0;
     var dmaStatusReg = 0;
 
+    function decodeMSA(dataview) {
+        var data = new Array()
+
+        var offset = 10;
+        var run = 0;
+        var code = 0;
+
+        var trackSize = dataview.getUint16(2) * dataview.getUint16(4) * 512; //calculate no. sectors * no. sides * sector size
+
+        while (offset < dataview.byteLength) {
+            var blockSize = dataview.getUint16(offset);
+            offset += 2;
+
+            if (blockSize == trackSize) {
+                while (blockSize--) data.push(dataview.getUint8(offset++));
+            } else {
+                while (blockSize) {
+                    code = dataview.getUint8(offset++);
+                    blockSize--;
+                    if (code != 0xe5) {
+                        data.push(code);
+                    } else {
+                        code = dataview.getUint8(offset++);
+                        run = dataview.getUint16(offset, false);
+                        offset += 2;
+                        blockSize -= 3;
+                        while (run--) { data.push(code); }
+                    }
+                }
+            }
+        }
+
+        return new Uint8Array(data);
+    }
+
     function processFileA(arrayBuffer) {
-        floppyAdata = new Uint8Array(arrayBuffer);
+        if (arrayBuffer != null) {
+            var dv = new DataView(arrayBuffer);
+            var magicKey = dv.getUint16(0, false);
+
+            if (magicKey == 0x0e0f) {
+                floppyAdata = new decodeMSA(dv);
+            } else {
+                floppyAdata = new Uint8Array(arrayBuffer);
+            }
+        }
+        else {
+            floppyAdata = Uint8Array(0);
+        }
     }
 
     function processFileB(arrayBuffer) {
-        floppyBdata = new Uint8Array(arrayBuffer);
+        if (arrayBuffer != null) {
+            floppyBdata = new Uint8Array(arrayBuffer);
+        }
+        else {
+            floppyBdata = Uint8Array(0);
+        }
     }
 
     function getDiskGeometry() {
