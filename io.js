@@ -86,7 +86,7 @@ EstyJs.io = function (opts) {
 
     var dmaModeControl = 0;
     var dmaAddr = 0;
-
+	
     var memConfig = 5; //2 banks of 512k ram present only
     //var memConfig = 4; //1 banks of 512k ram present only
 
@@ -224,23 +224,18 @@ EstyJs.io = function (opts) {
             return;
         }
 
-        if (addr == 0xff8800) {
+        if ((addr & 0xffff01) == 0xff8801) return;
+
+        if ((addr & 0xffff03) == 0xff8800) {
             //PSG register select
             sound.selectRegister(val);
             return;
         }
 
-        if (addr == 0xff8801 | addr == 0xff8803) return;
 
-        if (addr == 0xff8802) {
+        if ((addr & 0xffff03) == 0xff8802) {
             //PSG register write
             sound.writeRegister(val);
-            return;
-        }
-
-        if (addr == 0xff8804) {
-            //PSG register write
-            sound.writeRegister2(5, val);
             return;
         }
 
@@ -262,11 +257,11 @@ EstyJs.io = function (opts) {
             return;
         }
 
-        if ((addr & 0xFF8900) == 0xFF8900) {
+        if ((addr & 0xFFFF00) == 0xFF8900) {
             throw "memory error";
         }
 
-        if ((addr & 0xFF8A00) == 0xFF8A00) {
+        if ((addr & 0xFFFF00) == 0xFF8A00) {
             throw "memory error";
         }
 
@@ -402,12 +397,12 @@ EstyJs.io = function (opts) {
             return 0x00;
         }
 
-        if ((addr & 0xFF8A00) == 0xFF8A00) {
+        if ((addr & 0xFFFF00) == 0xFF8A00) {
             return; //return undefined
         }
 
-        if ((addr & 0xFF8900) == 0xFF8900) {
-            return 0xff;
+        if ((addr & 0xFFFF00) == 0xFF8900) {
+            return; //return undefined
         }
 
         bug.say(sprintf('invalid io read $%06x', addr));

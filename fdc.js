@@ -97,6 +97,10 @@ EstyJs.fdc = function (opts) {
         }
     }
 
+    function trackAndSectorValid(geo) {
+        return (sectorNo <= geo.sectors && trackNo < geo.tracks && driveSide < geo.sides);
+    }
+
     function getDiskGeometry() {
         var result = new Object();
 
@@ -153,12 +157,8 @@ EstyJs.fdc = function (opts) {
         return result;
     }
 
-    function getDiskByte(byteOffset) {
-        var sectorOffset = 0;
-
-        var diskGeo = getDiskGeometry();
-
-        sectorOffset = ((sectorNo - 1) + (trackNo * diskGeo.sectors * diskGeo.sides) + (driveSide * diskGeo.sectors)) * 512;
+    function getDiskByte(diskGeo,byteOffset) {
+        var sectorOffset = ((sectorNo - 1) + (trackNo * diskGeo.sectors * diskGeo.sides) + (driveSide * diskGeo.sectors)) * 512;
 
         switch (selectedDrive) {
             case 'A':
@@ -290,15 +290,18 @@ EstyJs.fdc = function (opts) {
                 commandCompleteTimer = 5;
                 if (selectedDrive != '') {
                     var diskGeo = getDiskGeometry();
-                    var byteCount = sectorCount * 512;
+                    if (trackAndSectorValid(diskGeo)) {
 
-                    if (sectorCount + sectorNo > diskGeo.sectors) {
-                        byteCount = (diskGeo.sectors - (sectorNo - 1)) * 512;
-                    }
+                        var byteCount = sectorCount * 512;
 
-                    //bug.say(sprintf("read from offset $%8x",(((sectorNo-1) + (trackNo * 18) + (driveSide * 9)) * 512)));
-                    for (var i = 0; i < byteCount; i++) {
-                        memory.writeByte(dmaAddr++, getDiskByte(i));
+                        if (sectorCount + sectorNo > diskGeo.sectors) {
+                            byteCount = (diskGeo.sectors - (sectorNo - 1)) * 512;
+                        }
+
+                        //bug.say(sprintf("read from offset $%8x",(((sectorNo-1) + (trackNo * 18) + (driveSide * 9)) * 512)));
+                        for (var i = 0; i < byteCount; i++) {
+                            memory.writeByte(dmaAddr++, getDiskByte(diskGeo,i));
+                        }
                     }
                     mfp.setFloppyGpio();
                 }
@@ -551,17 +554,20 @@ EstyJs.fdc = function (opts) {
                         break;
                     case 0x80:
                         //read data
+                        status = 0x90;
                         if (selectedDrive != '') {
-                            var byteCount = 512;
-                            //bug.say(sprintf("read from offset $%8x",(((sectorNo-1) + (trackNo * 18) + (driveSide * 9)) * 512)));
-                            for (var i = 0; i < byteCount; i++) {
-                                memory.writeByte(dmaAddr++, getDiskByte(i));
+							var diskGeo = getDiskGeometry();
+                            if (trackAndSectorValid(diskGeo)) {
+                                var byteCount = 512;
+                                //bug.say(sprintf("read from offset $%8x",(((sectorNo-1) + (trackNo * 18) + (driveSide * 9)) * 512)));
+                                for (var i = 0; i < byteCount; i++) {
+                                    memory.writeByte(dmaAddr++, getDiskByte(diskGeo,i));
+                                }
+								status = 0x80; // | (currentTrack() ? 0 : 4) | (diskInserted() ? 0 : 16);
                             }
-                            status = 0x80; // | (currentTrack() ? 0 : 4) | (diskInserted() ? 0 : 16);
                         }
                         else {
                             bug.say("sector read when no selected drive");
-                            status = 0x90;
                         }
                         break;
                     case 0x90:

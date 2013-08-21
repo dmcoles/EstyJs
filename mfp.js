@@ -53,6 +53,92 @@ EstyJs.mfp = function (opts) {
 
     var activeEdge = 0;
 
+    var dataDirection = 0;
+
+    var usartControl = 0;
+    var usartTxStatus = 0;
+    var usartRxStatus = 0;
+    var usartSyncChar = 0;
+    var usartData = 0;
+
+    function doTimers(count) {
+        if ((timerAcontrol & 0xf) > 0 && (timerAcontrol & 0xf) < 8) {
+            timerAcntr2 += count;
+
+            while (timerAcntr2 >= timerAdiv * clockCyclesPerCpuCycle) {
+                timerAcntr2 -= timerAdiv * clockCyclesPerCpuCycle;
+                timerAcntr = (timerAcntr - 1) & 0xff;
+
+
+                //do event when timer A reaches 0
+                if (timerAcntr == 0) {
+                    timerAcntr = timerAdata;
+
+                    if ((interruptEnableA & 32) != 0) {
+                        self.interruptRequest(13);
+                    }
+                }
+            }
+        }
+
+        if ((timerBcontrol & 0xf) > 0 && (timerBcontrol & 0xf) < 8) {
+            timerBcntr2 += count;
+
+            while (timerBcntr2 >= timerBdiv * clockCyclesPerCpuCycle) {
+                timerBcntr2 -= timerBdiv * clockCyclesPerCpuCycle;
+                timerBcntr = (timerBcntr - 1) & 0xff;
+
+
+                //do event when timer B reaches 0
+                if (timerBcntr == 0) {
+                    timerBcntr = timerBdata;
+
+                    if ((interruptEnableA & 1) != 0) {
+                        self.interruptRequest(8);
+                    }
+                }
+            }
+        }
+
+        if (timerCcontrol > 0) {
+            timerCcntr2 += count;
+
+            while (timerCcntr2 >= timerCdiv * clockCyclesPerCpuCycle) {
+                timerCcntr2 -= timerCdiv * clockCyclesPerCpuCycle;
+                timerCcntr = (timerCcntr - 1) & 0xff;
+
+
+                //do event when timer C reaches 0
+                if (timerCcntr == 0) {
+                    timerCcntr = timerCdata;
+
+                    if ((interruptEnableB & 0x20) != 0) {
+                        self.interruptRequest(5);
+                    }
+                }
+            }
+        }
+
+        if (timerDcontrol > 0) {
+            timerDcntr2 += count;
+
+            while (timerDcntr2 >= timerDdiv * clockCyclesPerCpuCycle) {
+                timerDcntr2 -= timerDdiv * clockCyclesPerCpuCycle;
+                timerDcntr = (timerDcntr - 1) & 0xff;
+
+
+                //do event when timer C reaches 0
+                if (timerDcntr == 0) {
+                    timerDcntr = timerDdata;
+
+                    if ((interruptEnableB & 0x10) != 0) {
+                        self.interruptRequest(4);
+                    }
+                }
+            }
+        }
+    }
+
     self.writeData = function (addr, val) {
 
         if (addr == 0xFFFA01) {
@@ -62,6 +148,11 @@ EstyJs.mfp = function (opts) {
 
         if (addr == 0xFFFA03) {
             activeEdge = val;
+            return;
+        }
+
+        if (addr == 0xFFFA05) {
+            dataDirection = val;
             return;
         }
 
@@ -130,7 +221,7 @@ EstyJs.mfp = function (opts) {
             }
 
             timerAcontrol = val;
-            switch (val&0xf) {
+            switch (val & 0xf) {
                 case 0:
                     timerAcntr2 = 0;
                     timerAdiv = 1;
@@ -172,7 +263,7 @@ EstyJs.mfp = function (opts) {
             }
 
             timerBcontrol = val;
-            switch (val&0xf) {
+            switch (val & 0xf) {
                 case 0:
                     timerBcntr2 = 0;
                     timerBdiv = 1;
@@ -207,16 +298,20 @@ EstyJs.mfp = function (opts) {
         if ((addr == 0xFFFA1F)) {
             //timer A data
             timerAdata = val;
-            if (!(timerAcontrol&0xf)) timerAcntr = val;
-            timerAcntr2 = 0;
+            if (!(timerAcontrol & 0xf)) {
+                timerAcntr = val;
+                timerAcntr2 = 0;
+            }
             return;
         }
 
         if ((addr == 0xFFFA21)) {
             //timer B data
             timerBdata = val;
-            if (!(timerBcontrol&0xf)) timerBcntr = val;
-            timerBcntr2 = 0;
+            if (!(timerBcontrol & 0xf)) {
+                timerBcntr = val;
+                timerBcntr2 = 0;
+            }
             return;
         }
 
@@ -296,17 +391,50 @@ EstyJs.mfp = function (opts) {
         if (addr == 0xFFFA23) {
             //timer C data
             timerCdata = val;
-            if (!timerCcontrol) timerCcntr = val;
-            timerCcntr2 = 0;
+            if (!timerCcontrol) {
+                timerCcntr = val;
+                timerCcntr2 = 0;
+            }
             return;
         }
 
         if (addr == 0xFFFA25) {
             //timer D data
             timerDdata = val;
-            if (!timerDcontrol) timerDcntr = val;
-            timerDcntr2 = 0;
+            if (!timerDcontrol) {
+                timerDcntr = val;
+                timerDcntr2 = 0;
+            }
             return;
+        }
+
+        if (addr == 0xFFFA27) {
+            usartSyncChar = val;
+            return;
+        }
+
+        if (addr == 0xFFFA29) {
+            usartControl = val;
+            return;
+        }
+
+        if (addr == 0xFFFA2B) {
+            usartRxStatus = val;
+            return;
+        }
+
+        if (addr == 0xFFFA2D) {
+            usartTxStatus = val;
+            return;
+        }
+
+        if (addr == 0xFFFA2F) {
+            usartData = val;
+            return;
+        }
+
+        if ((addr >= 0xFFFA40) && (addr < 0xFFFA60)) {
+            throw "memory error";
         }
 
         bug.say(sprintf('invalid mfp write $%06x', addr));
@@ -398,7 +526,31 @@ EstyJs.mfp = function (opts) {
 
         if (addr == 0xFFFA05) {
             //data direction
-            return 0;
+            return dataDirection;
+        }
+
+        if (addr == 0xFFFA27) {
+            return usartSyncChar;
+        }
+
+        if (addr == 0xFFFA29) {
+            return usartControl;
+        }
+
+        if (addr == 0xFFFA2B) {
+            return usartRxStatus;
+        }
+
+        if (addr == 0xFFFA2D) {
+            return usartTxStatus;
+        }
+
+        if (addr == 0xFFFA2F) {
+            return usartData;
+        }
+
+        if ((addr >= 0xFFFA40) && (addr < 0xFFFA60)) {
+            return; //return undefined
         }
 
         bug.say(sprintf('invalid mfp read $%06x', addr));
@@ -406,88 +558,17 @@ EstyJs.mfp = function (opts) {
 
     }
 
-    self.startRow = function () {       
+    self.timerCycles = function (count) {
+        doTimers(count);
+    }
 
-        if ((timerAcontrol&0xf) > 0 && (timerAcontrol&0xf) < 8) {
-            timerAcntr2 += 512;
-
-            while (timerAcntr2 >= timerAdiv * clockCyclesPerCpuCycle) {
-                timerAcntr2 -= timerAdiv * clockCyclesPerCpuCycle;
-                timerAcntr = (timerAcntr - 1) & 0xff;
-
-
-                //do event when timer A reaches 0
-                if (timerAcntr == 0) {
-                    timerAcntr = timerAdata;
-
-                    if ((interruptEnableA & 32) != 0) {
-                        self.interruptRequest(13);
-                    }
-                }
-            }
-        }
-
-        if ((timerBcontrol&0xf) > 0 && (timerBcontrol&0xf) < 8) {
-            timerBcntr2 += 512;
-
-            while (timerBcntr2 >= timerBdiv * clockCyclesPerCpuCycle) {
-                timerBcntr2 -= timerBdiv * clockCyclesPerCpuCycle;
-                timerBcntr = (timerBcntr - 1) & 0xff;
-
-
-                //do event when timer B reaches 0
-                if (timerBcntr == 0) {
-                    timerBcntr = timerBdata;
-
-                    if ((interruptEnableA & 1) != 0) {
-                        self.interruptRequest(8);
-                    }
-                }
-            }
-        }
-
-        if (timerCcontrol > 0) {
-            timerCcntr2 += 512;
-
-            while (timerCcntr2 >= timerCdiv * clockCyclesPerCpuCycle) {
-                timerCcntr2 -= timerCdiv * clockCyclesPerCpuCycle;
-                timerCcntr = (timerCcntr - 1) & 0xff;
-
-
-                //do event when timer C reaches 0
-                if (timerCcntr == 0) {
-                    timerCcntr = timerCdata;
-
-                    if ((interruptEnableB & 0x20) != 0) {
-                        self.interruptRequest(5);
-                    }
-                }
-            }
-        }
-
-        if (timerDcontrol > 0) {
-            timerDcntr2 += 512;
-
-            while (timerDcntr2 >= timerDdiv * clockCyclesPerCpuCycle) {
-                timerDcntr2 -= timerDdiv * clockCyclesPerCpuCycle;
-                timerDcntr = (timerDcntr - 1) & 0xff;
-
-
-                //do event when timer C reaches 0
-                if (timerDcntr == 0) {
-                    timerDcntr = timerDdata;
-
-                    if ((interruptEnableB & 0x10) != 0) {
-                        self.interruptRequest(4);
-                    }
-                }
-            }
-        }
+    self.startRow = function () {
+        doTimers(512);
     }
 
     self.endRow = function () {
         //event count or pulse width
-        if ((timerAcontrol&0xf) >= 8 && display.displayOn) {
+        if ((timerAcontrol & 0xf) >= 8 && display.displayOn) {
             timerAcntr2++;
             if (timerAcntr2 >= timerAdiv) {
                 timerAcntr2 = 0;
@@ -505,7 +586,7 @@ EstyJs.mfp = function (opts) {
         }
 
         //event count or pulse width
-        if ((timerBcontrol&0xf) >= 8 && display.displayOn) {
+        if ((timerBcontrol & 0xf) >= 8 && display.displayOn) {
             timerBcntr2++;
             if (timerBcntr2 >= timerBdiv) {
                 timerBcntr2 = 0;
@@ -532,38 +613,38 @@ EstyJs.mfp = function (opts) {
     self.interruptRequest = function (lvl) {
 
         switch (lvl) {
-            //timer D interrupt      
+            //timer D interrupt              
             case 4:
                 if (interruptEnableB & interruptMaskB & 0x10) {
                     interruptPendingB |= 0x10;
                 }
                 break;
-            //timer C interrupt      
+            //timer C interrupt              
             case 5:
                 if (interruptEnableB & interruptMaskB & 0x20) {
                     interruptPendingB |= 0x20;
                 }
                 break;
-            //acia (keyboard & midi)      
+            //acia (keyboard & midi)              
             case 6:
                 if (interruptEnableB & interruptMaskB & 0x40) {
                     interruptPendingB |= 0x40;
                 }
                 break;
-            //floppy      
+            //floppy              
             case 7:
                 if (interruptEnableB & interruptMaskB & 0x80) {
                     interruptPendingB |= 0x80;
                 }
                 break;
 
-            //timer B interrupt      
+            //timer B interrupt              
             case 8:
                 if (interruptEnableA & interruptMaskA & 1) {
                     interruptPendingA |= 1;
                 }
                 break;
-            //timer A interrupt      
+            //timer A interrupt              
             case 13:
                 if (interruptEnableA & interruptMaskA & 0x20) {
                     interruptPendingA |= 0x20;

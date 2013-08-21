@@ -244,7 +244,7 @@ EstyJs.Keyboard = function (opts) {
         //75 = left cursor, 77 = right cursor, 80 = down, 72 = up
         if (self.KeypadJoystick && (keyCode == 75 || keyCode == 77 || keyCode == 72 || keyCode == 80) || keyCode == 0x1D) {
             switch (keyCode) {
-                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire                        
+                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire                          
                 case 72:
                     //up
                     joystickPos |= 1;
@@ -270,9 +270,9 @@ EstyJs.Keyboard = function (opts) {
 
             //if port0mouse joystick sends right mouse click instead of fire
             if ((keyCode == 0x1d) && port0Mouse) {
-                if (mouseAction == 4 || mouseMode=='K') {
+                if (mouseAction == 4 || mouseMode == 'K') {
                     dataOut.push(0x75);
-                } else if (mouseMode=='R') {
+                } else if (mouseMode == 'R') {
                     dataOut.push(0xf9 | (leftDown ? 2 : 0)); //mouse buttons
                     dataOut.push(0);
                     dataOut.push(0);
@@ -303,7 +303,7 @@ EstyJs.Keyboard = function (opts) {
 
         if (self.KeypadJoystick && (keyCode == 75 || keyCode == 77 || keyCode == 72 || keyCode == 80) || keyCode == 0x1D) {
             switch (keyCode) {
-                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire                        
+                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire                          
                 case 72:
                     //up
                     joystickPos &= 0xff - 1;
@@ -329,9 +329,9 @@ EstyJs.Keyboard = function (opts) {
 
             //if port0mouse joystick sends right mouse click instead of fire
             if ((keyCode == 0x1d) && port0Mouse) {
-                if (mouseAction == 4 || mouseMode=='K') {
+                if (mouseAction == 4 || mouseMode == 'K') {
                     dataOut.push(0xf5);
-                } else if (mouseMode=='R') {
+                } else if (mouseMode == 'R') {
                     dataOut.push(0xf8 | (leftDown ? 2 : 0)); //mouse buttons
                     dataOut.push(0);
                     dataOut.push(0);
@@ -386,9 +386,8 @@ EstyJs.Keyboard = function (opts) {
     }
 
     self.processCommand = function (cmd) {
-        txRegisterEmpty = true;
-        //writeData = cmd;
-        keyCommands.push(cmd);
+        txRegisterEmpty = false;
+        writeData = cmd;
     }
     ;
     self.processRow = function (processor) {
@@ -400,6 +399,11 @@ EstyJs.Keyboard = function (opts) {
             }
 
 
+        }
+
+        if (!txRegisterEmpty) {
+            keyCommands.push(writeData);
+            txRegisterEmpty = true;
         }
 
         if (dataOut.length > 0 && !rxRegisterFull && !paused) {
@@ -616,11 +620,10 @@ EstyJs.Keyboard = function (opts) {
                     break;
                 case 0x16:
                     //interrogate joystick
-                    //port0Mouse = false;
+                    port0Mouse = false;
                     dataOut.push(0xfd);
                     dataOut.push(0);
                     dataOut.push(joystickPos);
-                    // dataOut.push(0); dataOut.push(0); dataOut.push(0);dataOut.push(0); dataOut.push(0);
                     break;
                 case 0x17:
                     //set joystick monitoring

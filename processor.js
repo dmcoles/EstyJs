@@ -287,14 +287,14 @@ EstyJs.Processor = function (opts) {
         var r = prefetch1;
         prefetch1 = prefetch2;
         regs.pc += 2;
-        prefetch2 = memory.readWord(regs.pc+2);
+        prefetch2 = memory.readWord(regs.pc + 2);
         return r;
     }
     function nextILong() {
         var r = memory.readLong(regs.pc);
         regs.pc += 4;
         prefetch1 = memory.readWord(regs.pc);
-        prefetch2 = memory.readWord(regs.pc+2);
+        prefetch2 = memory.readWord(regs.pc + 2);
         return r;
     }
 
@@ -1126,17 +1126,17 @@ EstyJs.Processor = function (opts) {
             var r = ldeaTable[sea.t](sea, p.z);
 
             if (p.z == 2) {
-                steaTable[dea.t](dea, 1, r >>> 8);
+                steaTable[dea.t](dea, 1, (r >>> 8) & 0xff);
                 dea.a += 2;
-                steaTable[dea.t](dea, 1, r);
+                steaTable[dea.t](dea, 1, r & 0xff);
             } else {
-                steaTable[dea.t](dea, 1, r >>> 24);
+                steaTable[dea.t](dea, 1, (r >>> 24));
                 dea.a += 2;
-                steaTable[dea.t](dea, 1, r >>> 16);
+                steaTable[dea.t](dea, 1, (r >>> 16) & 0xff);
                 dea.a += 2;
-                steaTable[dea.t](dea, 1, r >>> 8);
+                steaTable[dea.t](dea, 1, (r >>> 8) & 0xff);
                 dea.a += 2;
-                steaTable[dea.t](dea, 1, r);
+                steaTable[dea.t](dea, 1, r & 0xff);
             }
             //BUG.say(sprintf('I_MOVEP_R2M.%s A%d addr $%08x r $%08x', szChr(p.z), sea.a, dea.a - (p.z == 2 ? 4 : 8), r));
         }
@@ -1310,7 +1310,7 @@ EstyJs.Processor = function (opts) {
             //regs.pc = fault.pc;
             return exception(5);
         } else {
-            var quo = ~~(d / s); //perform double not to convert from float to int without rounding
+            var quo = ~ ~(d / s); //perform double not to convert from float to int without rounding
 
             if (quo < 0) quo += 0x10000;
 
@@ -1348,7 +1348,7 @@ EstyJs.Processor = function (opts) {
             //regs.pc = fault.pc;
             return exception(5);
         } else {
-            var quo = ~~(d / s); //perform double not to convert from float to int without rounding
+            var quo = ~ ~(d / s); //perform double not to convert from float to int without rounding
 
             if (quo > 0xffff) {
                 regs.v = true;
@@ -5272,7 +5272,7 @@ EstyJs.Processor = function (opts) {
         }
         regs.pc = pc;
         prefetch1 = memory.readWord(pc);
-        prefetch2 = memory.readWord(pc+2);
+        prefetch2 = memory.readWord(pc + 2);
     }
 
     function exception_trace(n) {
@@ -5522,7 +5522,7 @@ EstyJs.Processor = function (opts) {
         regs.a[7] = memory.readLong(addr);
         regs.pc = memory.readLong(addr + 4);
         prefetch1 = memory.readWord(regs.pc);
-        prefetch2 = memory.readWord(regs.pc+2);
+        prefetch2 = memory.readWord(regs.pc + 2);
         regs.stopped = false;
 
         BUG.say(sprintf('cpu.reset() addr 0x%08x, A7 0x%08x, PC 0x%08x', addr, regs.a[7], regs.pc));
@@ -5579,7 +5579,9 @@ EstyJs.Processor = function (opts) {
             if (SPCFLAG_TRACE) trace();
 
 
-            tot_cycles += ((cpu_cycles + 3) & 0xfffc);
+            cpu_cycles = ((cpu_cycles + 3) & 0xfffc);
+            //mfp.timerCycles(cpu_cycles);
+            tot_cycles += cpu_cycles;
 
 
 
