@@ -540,11 +540,11 @@ EstyJs.Sound = function (opts) {
             case AY_AFINE:
             case AY_ACOARSE:
 
-                AY8912_Regs[AY_ACOARSE] = AY8912_Regs[AY_ACOARSE] & 0xF;
+                //AY8912_Regs[AY_ACOARSE] = AY8912_Regs[AY_ACOARSE] & 0xF;
 
                 old = AY8912_PeriodA;
 
-                AY8912_PeriodA = Math.round((AY8912_Regs[AY_AFINE] + (256 * AY8912_Regs[AY_ACOARSE]))
+                AY8912_PeriodA = Math.round((AY8912_Regs[AY_AFINE] + (256 * (AY8912_Regs[AY_ACOARSE] &0xf)))
             * AY8912_UpdateStep);
 
                 if (AY8912_PeriodA == 0)
@@ -558,11 +558,11 @@ EstyJs.Sound = function (opts) {
             case AY_BFINE:
             case AY_BCOARSE:
 
-                AY8912_Regs[AY_BCOARSE] = AY8912_Regs[AY_BCOARSE] & 0xF;
+                //AY8912_Regs[AY_BCOARSE] = AY8912_Regs[AY_BCOARSE] & 0xF;
 
                 old = AY8912_PeriodB;
 
-                AY8912_PeriodB = Math.round((AY8912_Regs[AY_BFINE] + (256 * AY8912_Regs[AY_BCOARSE]))
+                AY8912_PeriodB = Math.round((AY8912_Regs[AY_BFINE] + (256 * (AY8912_Regs[AY_BCOARSE]&0xf)))
             * AY8912_UpdateStep);
 
                 if (AY8912_PeriodB == 0)
@@ -577,11 +577,11 @@ EstyJs.Sound = function (opts) {
             case AY_CFINE:
             case AY_CCOARSE:
 
-                AY8912_Regs[AY_CCOARSE] = AY8912_Regs[AY_CCOARSE] & 0xF;
+                //AY8912_Regs[AY_CCOARSE] = AY8912_Regs[AY_CCOARSE] & 0xF;
 
                 old = AY8912_PeriodC;
 
-                AY8912_PeriodC = Math.round((AY8912_Regs[AY_CFINE] + (256 * AY8912_Regs[AY_CCOARSE]))
+                AY8912_PeriodC = Math.round((AY8912_Regs[AY_CFINE] + (256 * (AY8912_Regs[AY_CCOARSE]&0xf)))
             * AY8912_UpdateStep);
 
                 if (AY8912_PeriodC == 0)
@@ -967,12 +967,20 @@ EstyJs.Sound = function (opts) {
                 //AY8912_VolE = AY8912_VolTable2[AY8912_CountEnv ^ AY8912_Attack];
                 AY8912_VolE = (AY8912_CountEnv ^ AY8912_Attack) >> 1;
 
-                //reload volume
-                if (AY8912_EnvelopeA != 0) AY8912_VolA = AY8912_VolE;
-                if (AY8912_EnvelopeB != 0) AY8912_VolB = AY8912_VolE;
-                if (AY8912_EnvelopeC != 0) AY8912_VolC = AY8912_VolE;
-            }
-        }
+				//reload volume
+				if (AY8912_EnvelopeA != 0) AY8912_VolA = AY8912_VolE;
+				if (AY8912_EnvelopeB != 0) AY8912_VolB = AY8912_VolE;
+				if (AY8912_EnvelopeC != 0) AY8912_VolC = AY8912_VolE;     
+
+			} 
+			
+
+        } else {
+				//reload volume
+				if (AY8912_EnvelopeA != 0) AY8912_VolA = 0;
+				if (AY8912_EnvelopeB != 0) AY8912_VolB = 0;
+				if (AY8912_EnvelopeC != 0) AY8912_VolC = 0;     
+		}
 
         if (AY8912_PeriodA <= AY8912_UpdateStep) {
             VolA = 16384;

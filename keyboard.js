@@ -244,7 +244,7 @@ EstyJs.Keyboard = function (opts) {
         //75 = left cursor, 77 = right cursor, 80 = down, 72 = up
         if (self.KeypadJoystick && (keyCode == 75 || keyCode == 77 || keyCode == 72 || keyCode == 80) || keyCode == 0x1D) {
             switch (keyCode) {
-                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire                          
+                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire                            
                 case 72:
                     //up
                     joystickPos |= 1;
@@ -303,7 +303,7 @@ EstyJs.Keyboard = function (opts) {
 
         if (self.KeypadJoystick && (keyCode == 75 || keyCode == 77 || keyCode == 72 || keyCode == 80) || keyCode == 0x1D) {
             switch (keyCode) {
-                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire                          
+                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire                            
                 case 72:
                     //up
                     joystickPos &= 0xff - 1;
@@ -564,6 +564,9 @@ EstyJs.Keyboard = function (opts) {
                 case 0x0D:
                     //interrogate mouse position
                     port0Mouse = true;
+
+                    if (dataOut.length > 255) break;
+
                     dataOut.push(0xf7);
                     dataOut.push(0 | (absLeftUpSinceLast ? 8 : 0) | (absLeftDownSinceLast ? 4 : 0) | (absRightUpSinceLast ? 2 : 0) | (absRightDownSinceLast ? 1 : 0));
                     dataOut.push(Math.floor((mouseX / $("#" + output).width() * mouseXmax) >> 8));
@@ -621,6 +624,8 @@ EstyJs.Keyboard = function (opts) {
                 case 0x16:
                     //interrogate joystick
                     port0Mouse = false;
+                    if (dataOut.length > 255) break;
+
                     dataOut.push(0xfd);
                     dataOut.push(0);
                     dataOut.push(joystickPos);
@@ -686,6 +691,8 @@ EstyJs.Keyboard = function (opts) {
 
                 case 0x87:
                     //mouse button action status inquiry
+                    if (dataOut.length > 255) break;
+
                     dataOut.push(0xf6);
                     dataOut.push(mouseAction);
                     dataOut.push(0); dataOut.push(0); dataOut.push(0); dataOut.push(0); dataOut.push(0); dataOut.push(0);

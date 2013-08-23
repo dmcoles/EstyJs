@@ -280,7 +280,7 @@ EstyJs.fdc = function (opts) {
                 commandCompleteTimer = 2;
                 break;
             case 0x80:
-                commandCompleteTimer = 5;
+                commandCompleteTimer = 30;
                 bug.say(sprintf("fdc: command read sector - %s - side: %d - track: %d - sector: %d - sector count: %d - addr: $%06x", selectedDrive, driveSide, trackNo, sectorNo, sectorCount, dmaAddr));
                 dmaStatusReg = 1 | (sectorCount ? 2 : 0);
                 mfp.setFloppyGpio();
@@ -617,7 +617,6 @@ EstyJs.fdc = function (opts) {
                 writeDriveStatus(status);
 
                 aborted = false;
-
 
                 dmaStatusReg = 1;
 

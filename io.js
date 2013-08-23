@@ -20,7 +20,7 @@
 
 //$FFFF8800  r    |xxxxxxxx|          PSG register data
 //           w    |xxxxxxxx|          PSG register select
-//$FFFF8802  w    |...xxxxx|          PSG register 5 (Noise Generator) 
+//$FFFF8802  w    |...xxxxx|          PSG register data
 
 //$FFFFFC00  r/w  |xxxxxxxx|          Keyboard ACIA control
 //$FFFFFC02  r/w  |xxxxxxxx|          Keyboard ACIA data

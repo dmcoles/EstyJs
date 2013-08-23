@@ -193,7 +193,7 @@ EstyJs.Processor = function (opts) {
     }
 
     function castUWord(v) {
-        return (v < 0) ? (0x10000 - v) : v;
+        return (v < 0) ? (0x10000 + v) : v;
     }
 
     function castLong(v) {
@@ -201,7 +201,7 @@ EstyJs.Processor = function (opts) {
     }
 
     function castULong(v) {
-        return (v < 0) ? (0x100000000 - v) : v;
+        return (v < 0) ? (0x100000000 + v) : v;
     }
 
     function extByteToWord(v) {
@@ -624,7 +624,7 @@ EstyJs.Processor = function (opts) {
                         return memory.readWord(regs.a[7] - 2) >>> 8;
                     }
                     if (ea.a > 0xffffff) { //&& ea.m != M_absl) {
-                        //BUG.say(sprintf('ldEA() BUS ERROR, $%08x > 24bit, reducing address to $%08x', ea.a, ea.a & 0xffffff));
+                        //BUG.say(sprintf('ldEA() BUSERROR, $%08x > 24bit, reducing address to $%08x', ea.a, ea.a & 0xffffff));
                         ea.a &= 0xffffff;
                     }
                     if ((ea.a & 1) && z != 1) {
@@ -5341,6 +5341,10 @@ EstyJs.Processor = function (opts) {
         if (n == 2) {
             BUG.say(sprintf('cpu.exception() %d, regs.pc $%08x, fault.pc $%08x, fault.op $%04x, fault.ad $%08x, fault.ia %d', n, regs.pc, fault.pc, fault.op, fault.ad, fault.ia ? 1 : 0));
 
+            var ia = fault.ia;
+            var wa = 0;
+            var cd = (fault.op & 0xffe0) | (wa ? 0 : 16) | (olds ? 4 : 0) | (ia ? 2 : 1);
+
             //stEA(exEA(new effAddr(M_ripr, 7), 4), 4, regs.pc);
             //stEA(exEA(new effAddr(M_ripr, 7), 2), 2, sr);
 
@@ -5355,8 +5359,8 @@ EstyJs.Processor = function (opts) {
 
             var ia = fault.ia;
             var wa = 0;
-            var cd = (wa ? 0 : 16) | (olds ? 4 : 0) | (ia ? 2 : 1);
-
+            var cd = (fault.op & 0xffe0) | (wa ? 0 : 16) | (olds ? 4 : 0) | (ia ? 2 : 1);
+			
             stEA(exEA(new effAddr(M_ripr, 7), 4), 4, regs.pc);
             stEA(exEA(new effAddr(M_ripr, 7), 2), 2, sr);
             stEA(exEA(new effAddr(M_ripr, 7), 2), 2, fault.op);

@@ -444,7 +444,8 @@ EstyJs.mfp = function (opts) {
     self.readData = function (addr, val) {
 
         if (addr == 0xFFFA01) {
-            return (gpio & 0x7f) | (monoMonitor ? 0 : 0x80);
+            //not a clue what dataDirection is supposed to do but this seems good enough to get BAT 2 working
+            return ((gpio & 0x7f) | (monoMonitor ? 0 : 0x80))^dataDirection;
         }
 
         if (addr == 0xFFFA03) {
