@@ -437,15 +437,23 @@ EstyJs.Sound = function (opts) {
         audioBuffer = new Array();
 
         var audioContext = new AudioContext();
-        var audioNode = audioContext.createJavaScriptNode(16384, 1, 1);
+        if (audioContext.createJavaScriptNode != null) {
+            var audioNode = audioContext.createJavaScriptNode(16384, 1, 1);
+        } else if (audioContext.createScriptProcessor != null) {
+            var audioNode = audioContext.createScriptProcessor(16384, 1, 1);
+        } else {
+            var audioNode = null;
+        }
 
-        onAudioProcess = function (e) {
-            var buffer = e.outputBuffer.getChannelData(0);
-            fillBuffer(buffer);
-        };
+        if (audioNode != null) {
+            onAudioProcess = function (e) {
+                var buffer = e.outputBuffer.getChannelData(0);
+                fillBuffer(buffer);
+            };
 
-        audioNode.onaudioprocess = onAudioProcess;
-        audioNode.connect(audioContext.destination);
+            audioNode.onaudioprocess = onAudioProcess;
+            audioNode.connect(audioContext.destination);
+        }
     }
     else if (typeof (Audio) != 'undefined') {
         /* Use audio data api */
@@ -544,7 +552,7 @@ EstyJs.Sound = function (opts) {
 
                 old = AY8912_PeriodA;
 
-                AY8912_PeriodA = Math.round((AY8912_Regs[AY_AFINE] + (256 * (AY8912_Regs[AY_ACOARSE] &0xf)))
+                AY8912_PeriodA = Math.round((AY8912_Regs[AY_AFINE] + (256 * (AY8912_Regs[AY_ACOARSE] & 0xf)))
             * AY8912_UpdateStep);
 
                 if (AY8912_PeriodA == 0)
@@ -562,7 +570,7 @@ EstyJs.Sound = function (opts) {
 
                 old = AY8912_PeriodB;
 
-                AY8912_PeriodB = Math.round((AY8912_Regs[AY_BFINE] + (256 * (AY8912_Regs[AY_BCOARSE]&0xf)))
+                AY8912_PeriodB = Math.round((AY8912_Regs[AY_BFINE] + (256 * (AY8912_Regs[AY_BCOARSE] & 0xf)))
             * AY8912_UpdateStep);
 
                 if (AY8912_PeriodB == 0)
@@ -581,7 +589,7 @@ EstyJs.Sound = function (opts) {
 
                 old = AY8912_PeriodC;
 
-                AY8912_PeriodC = Math.round((AY8912_Regs[AY_CFINE] + (256 * (AY8912_Regs[AY_CCOARSE]&0xf)))
+                AY8912_PeriodC = Math.round((AY8912_Regs[AY_CFINE] + (256 * (AY8912_Regs[AY_CCOARSE] & 0xf)))
             * AY8912_UpdateStep);
 
                 if (AY8912_PeriodC == 0)
@@ -632,7 +640,7 @@ EstyJs.Sound = function (opts) {
                 if (AY8912_EnvelopeB != 0)
                     AY8912_VolB = AY8912_VolE
                 else {
-                   AY8912_VolB = AY8912_Regs[AY_BVOL];
+                    AY8912_VolB = AY8912_Regs[AY_BVOL];
                 };
                 break;
 
@@ -967,20 +975,20 @@ EstyJs.Sound = function (opts) {
                 //AY8912_VolE = AY8912_VolTable2[AY8912_CountEnv ^ AY8912_Attack];
                 AY8912_VolE = (AY8912_CountEnv ^ AY8912_Attack) >> 1;
 
-				//reload volume
-				if (AY8912_EnvelopeA != 0) AY8912_VolA = AY8912_VolE;
-				if (AY8912_EnvelopeB != 0) AY8912_VolB = AY8912_VolE;
-				if (AY8912_EnvelopeC != 0) AY8912_VolC = AY8912_VolE;     
+                //reload volume
+                if (AY8912_EnvelopeA != 0) AY8912_VolA = AY8912_VolE;
+                if (AY8912_EnvelopeB != 0) AY8912_VolB = AY8912_VolE;
+                if (AY8912_EnvelopeC != 0) AY8912_VolC = AY8912_VolE;
 
-			} 
-			
+            }
+
 
         } else {
-				//reload volume
-				if (AY8912_EnvelopeA != 0) AY8912_VolA = 0;
-				if (AY8912_EnvelopeB != 0) AY8912_VolB = 0;
-				if (AY8912_EnvelopeC != 0) AY8912_VolC = 0;     
-		}
+            //reload volume
+            if (AY8912_EnvelopeA != 0) AY8912_VolA = 0;
+            if (AY8912_EnvelopeB != 0) AY8912_VolB = 0;
+            if (AY8912_EnvelopeC != 0) AY8912_VolC = 0;
+        }
 
         if (AY8912_PeriodA <= AY8912_UpdateStep) {
             VolA = 16384;
