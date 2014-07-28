@@ -198,6 +198,14 @@ function EstyJs(output) {
 	    }
 	    this.reset();
 	}
+
+	self.lockMouse = function () {
+	    keyboard.lockMouse();
+	}
+
+	self.getMouseLocked = function() {
+        return keyboard.mouseLocked();
+	}
 	
 	return self;
 }

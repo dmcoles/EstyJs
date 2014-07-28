@@ -1,4 +1,4 @@
-<!DOCTYPE HTML>
+﻿<!DOCTYPE HTML>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <meta name="description" content="Javascript based Atari ST Emulator">
 <meta name="keywords" content="JavaScript, Atari, ST, Emulator, EstyJs">
@@ -89,6 +89,7 @@
 			<canvas id = "EstyJsOutput" width="640" height="400" >
 			</canvas>
 			<div id = "buttonpanel">
+            <small><button id="btnLocked" onclick="lockMouse();">Lock</button></small>
 			<small><button onclick="reset()" id="btnReset">Reset</button>
 			<button onclick="pauseResume()" id="btnPause">Pause</button>
 			<button onclick="soundToggle()" id="btnSound">Sound off</button>

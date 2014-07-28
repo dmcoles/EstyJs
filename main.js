@@ -3,6 +3,8 @@
 
 var estyjs = null;			
 
+setTimeout(mouseLocked, 250);
+
 function reset() {
 	estyjs.reset();
 }
@@ -87,4 +89,20 @@ function changeJoystick() {
 
 function changeRamSize() {
     estyjs.setMemory($('#ram').prop('checked'));
+}
+
+function lockMouse() {
+    estyjs.lockMouse();
+}
+
+function mouseLocked() {
+    var locked = estyjs.getMouseLocked();
+    if (locked) {
+        $("#btnLocked span").text("Unlock");
+    }
+    else {
+        $("#btnLocked span").text("Lock");
+    }
+    setTimeout(mouseLocked, 250);
+
 }

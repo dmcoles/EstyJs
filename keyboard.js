@@ -68,6 +68,8 @@ EstyJs.Keyboard = function (opts) {
 
     var dataOut = new Array();
 
+    var locked = false;
+
     readData = 0;
     writeData = 0;
 
@@ -182,9 +184,47 @@ EstyJs.Keyboard = function (opts) {
         return (Math.floor(v / 10) << 4) + (v % 10);
     }
 
+    function lockChange() {
+        var requestedElement = document.getElementById(output);
+
+
+        if (document.pointerLockElement === requestedElement ||
+          document.mozPointerLockElement === requestedElement ||
+          document.webkitPointerLockElement === requestedElement) {
+            // Pointer was just locked
+            // Enable the mousemove listener
+              document.onmousemove = mouseMove2;
+              locked = true;
+        } else {
+            // Pointer was just unlocked
+            // Disable the mousemove listener
+            document.onmousemove = mouseMove;
+            locked = false;
+        }
+    }
+
     function mouseMove(evt) {
         mouseX = evt.pageX - $("#" + output).offset().left;
         mouseY = evt.pageY - $("#" + output).offset().top;
+        if (oldMouseX == -10000) {
+            oldMouseX = mouseX;
+            oldMouseY = mouseY;
+        }
+    }
+
+    function mouseMove2(e) {
+        var movementX = e.movementX ||
+              e.mozMovementX ||
+              e.webkitMovementX ||
+              0,
+          movementY = e.movementY ||
+              e.mozMovementY ||
+              e.webkitMovementY ||
+              0;
+
+        mouseX = mouseX + movementX;
+        mouseY = mouseY + movementY;
+
         if (oldMouseX == -10000) {
             oldMouseX = mouseX;
             oldMouseY = mouseY;
@@ -790,19 +830,58 @@ EstyJs.Keyboard = function (opts) {
         oldRightDown = rightDown;
     }
 
+    var htmlElement = document.getElementById(htmlControl);
     document.onkeydown = keyDown;
     document.onkeyup = keyUp;
     document.onkeypress = keyPress;
     document.onmousemove = mouseMove;
-    document.getElementById(htmlControl).onmousedown = mouseDown;
-    document.getElementById(htmlControl).onmouseup = mouseUp;
-    document.getElementById(htmlControl).oncontextmenu = function () {
+    htmlElement.onmousedown = mouseDown;
+    htmlElement.onmouseup = mouseUp;
+    htmlElement.oncontextmenu = function () {
         return false;
     }
 
     self.setSnapshotRegs = function (regs) {
         mouseMode = regs.mouseMode;
         joystickMode = regs.joystickMode;
+    }
+
+    self.lockMouse = function () {
+        var havePointerLock = 'pointerLockElement' in document ||
+            'mozPointerLockElement' in document ||
+            'webkitPointerLockElement' in document;
+
+        if (havePointerLock) {
+
+            // Hook pointer lock state change events
+            document.addEventListener('pointerlockchange', lockChange, false);
+            document.addEventListener('mozpointerlockchange', lockChange, false);
+            document.addEventListener('webkitpointerlockchange', lockChange, false);
+
+            htmlElement = document.getElementById(output);
+
+            htmlElement.requestPointerLock = htmlElement.requestPointerLock ||
+                                htmlElement.mozRequestPointerLock ||
+                                htmlElement.webkitRequestPointerLock;
+
+            if (!locked) {
+
+                // Ask the browser to lock the pointer
+                htmlElement.requestPointerLock();
+            } else {
+                htmlElement.exitPointerLock();
+            }
+
+            // Hook pointer lock state change events
+
+            /*document.addEventListener('pointerlockchange', changeCallback, false);
+            document.addEventListener('mozpointerlockchange', changeCallback, false);
+            document.addEventListener('webkitpointerlockchange', changeCallback, false);*/
+        }
+    }
+
+    self.mouseLocked = function() {
+        return locked;
     }
 
 
