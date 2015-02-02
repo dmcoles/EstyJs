@@ -163,13 +163,11 @@ EstyJs.Memory = function (opts) {
             ramDataView.setUint8(addr, val);
         }
         else if ((addr & 0xFF0000) == 0xFF0000) {
-            try
-            {
+            try {
                 io.write(addr, val);
             }
-            catch(Error)
-            {
-                if (Error=="memory error") processor.memoryError(addr);
+            catch (Error) {
+                if (Error == "memory error") processor.memoryError(addr);
             }
         }
         else {
@@ -235,6 +233,10 @@ EstyJs.Memory = function (opts) {
     self.setSnapshotMemory = function (membuff) {
         ram = membuff;
         ramDataView = new DataView(ram);
+    }
+
+    self.getRamDv = function () {
+        return ramDataView;
     }
 
     return self;

@@ -33,7 +33,7 @@ EstyJs.Processor = function (opts) {
 
     var tot_cycles = 0;
 
-    var pendingInterrupts = new Array(false, false, false, false, false, false, false);
+    var pendingInterrupts = new Uint8Array(8);
 
     var ldeaTable = new Array(null, ldEA_T_RD, ldEA_T_RA, ldEA_T_AD, ldEA_T_IM);
     var steaTable = new Array(null, stEA_T_RD, stEA_T_RA, stEA_T_AD);
@@ -5406,11 +5406,11 @@ EstyJs.Processor = function (opts) {
     }
 
     function interrupt_req(intr) {
-        pendingInterrupts[intr] = true;
+        pendingInterrupts[intr] = 255;
         /*if (intr > 0 && (intr > regs.intmask || intr == 7)) {
         interrupt(intr);
         } else {
-        pendingInterrupts[intr]=true;	
+        pendingInterrupts[intr]=255;	
         }*/
     }
 
@@ -5541,8 +5541,8 @@ EstyJs.Processor = function (opts) {
             pendingInterrupts[6] = mfp.doInterrupts(self);
 
             for (var i = 6; i > 0; i--) {
-                if (pendingInterrupts[i] && i > regs.intmask) {
-                    pendingInterrupts[i] = false;
+                if (pendingInterrupts[i]!=0 && i > regs.intmask) {
+                    pendingInterrupts[i] = 0;
                     interrupt(i);
                 }
             }

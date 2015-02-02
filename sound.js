@@ -38,6 +38,8 @@
 EstyJs.Sound = function (opts) {
     var self = {};
 
+    var bug = opts.bug;
+
     var fdc = opts.fdc;
 
     var clock = 512 * 313 * 50 / 4;
@@ -438,9 +440,9 @@ EstyJs.Sound = function (opts) {
 
         var audioContext = new AudioContext();
         if (audioContext.createJavaScriptNode != null) {
-            var audioNode = audioContext.createJavaScriptNode(16384, 1, 1);
+            var audioNode = audioContext.createJavaScriptNode(16384, 0, 1);
         } else if (audioContext.createScriptProcessor != null) {
-            var audioNode = audioContext.createScriptProcessor(16384, 1, 1);
+            var audioNode = audioContext.createScriptProcessor(16384, 0, 1);
         } else {
             var audioNode = null;
         }
@@ -1018,10 +1020,10 @@ EstyJs.Sound = function (opts) {
             n2 = 0;
         }
 
-        //forget about trying to resample etc when we are running slowly
-        //just loop around the buffer - hence the %n2
+        if (audioBuffer.length < n) resampleBuffer(n);
+
         for (var i = 0; i < n; i++) {
-            outputArray[i] = audioBuffer[i % n2];
+            outputArray[i] = audioBuffer[i];
         }
         audioBuffer.splice(0, n);
 
@@ -1029,6 +1031,9 @@ EstyJs.Sound = function (opts) {
 
     function resampleBuffer(count) {
         var newBuffer = new Array();
+
+
+        //bug.say(sprintf("resample audio %d % d", count, audioBuffer.length));
 
         for (var i = 0; i < count; i++) {
             newBuffer.push(audioBuffer[~ ~(i / count * audioBuffer.length)]);

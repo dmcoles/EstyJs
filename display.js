@@ -5,20 +5,39 @@ EstyJs.Display = function (opts) {
     var self = {};
 
     var memory = opts.memory;
+    var ramDv = memory.getRamDv();
     var output = opts.output;
     var fdc = opts.fdc;
     var processor = opts.processor;
 
+    var flipFlop = false;
+
     var element = document.getElementById(output);
     var context = element.getContext("2d");
 
-    var imageData = null;
-    var buf = null;
+    var imageData = context.createImageData(640, 512);
 
     var bigEndian = false;
 
     var buf8 = null;
     var data = null;
+
+    if (typeof (imageData.data) != 'undefined') {
+        buf8 = new Uint8Array(imageData.data.buffer);
+        data = new Uint32Array(imageData.data.buffer);
+
+        data[0] = 0x01020304;
+        if (buf8[0] = 0x04) {
+            bigEndian = false;
+        } else {
+            bigEndian = true;
+        }
+
+    }
+    else {
+        data = imageData.data;
+    }
+
 
     var syncMode = 2; //50hz
 
@@ -32,6 +51,8 @@ EstyJs.Display = function (opts) {
     var paletteConverted = new Uint32Array(16);
 
     var frameRate = 0;
+
+    var frameSkip = true;
 
     var widths = new Uint8Array([160, 160, 160]);
 
@@ -84,8 +105,10 @@ EstyJs.Display = function (opts) {
                 //lo-res
                 scrnAddr = screenRowStart;
                 for (x = 0; x < 20; x++) {
-                    m1 = memory.readLong(scrnAddr);
-                    m2 = memory.readLong(scrnAddr + 4);
+                    //m1 = memory.readLong(scrnAddr);
+                    //m2 = memory.readLong(scrnAddr + 4);
+                    m1 = ramDv.getInt32(scrnAddr, false);
+                    m2 = ramDv.getInt32(scrnAddr + 4,false);
                     scrnAddr += 8;
 
                     colour = paletteConverted[((m1 & 0x80000000) >>> 31) | ((m1 & 0x8000) >> 14) | ((m2 & 0x80000000) >>> 29) | ((m2 & 0x8000) >> 12)];
@@ -160,7 +183,9 @@ EstyJs.Display = function (opts) {
                 //med res
                 scrnAddr = screenRowStart;
                 for (x = 0; x < 40; x++) {
-                    m1 = memory.readLong(scrnAddr);
+                    //m1 = memory.readLong(scrnAddr);
+                    m1 = ramDv.getInt32(scrnAddr, false);
+
                     scrnAddr += 4;
 
                     colour = paletteConverted[((m1 & 0x80000000) >>> 31) | ((m1 & 0x8000) >> 14)];
@@ -683,43 +708,30 @@ EstyJs.Display = function (opts) {
 
     self.startFrame = function () {
 
+        flipFlop = !flipFlop;
 
-        if (imageData != null) {
-            if (buf8 != null) imageData.data.set(buf8);
-            context.putImageData(imageData, 0, 0); // at coords 0,0
+        if (!frameSkip) flipFlop = true;
 
-            var text = fdc.getDisplayData();
+        if (flipFlop) {
+            if (imageData != null) {
+                //if (buf8 != null) imageData.data.set(buf8);
+                context.putImageData(imageData, 0, 0); // at coords 0,0
 
-            context.fillStyle = "White";
-            context.font = "bold 16px Arial";
-            if (text.length > 0) {
-                context.fillText(text[0], 600, 380);
-            }
-            if (text.length > 1) {
-                context.fillText(text[1], 600, 395);
-            }
+                var text = fdc.getDisplayData();
 
-            context.fillText(frameRate.toString() + "%", 10, 15);
+                context.fillStyle = "White";
+                context.font = "bold 16px Arial";
+                if (text.length > 0) {
+                    context.fillText(text[0], 600, 380);
+                }
+                if (text.length > 1) {
+                    context.fillText(text[1], 600, 395);
+                }
 
-        }
+                context.fillText(frameRate.toString() + "%", 10, 15);
 
-        imageData = context.createImageData(640, 512);
-
-        if (typeof (imageData.data.set) != 'undefined') {
-            buf = new ArrayBuffer(imageData.data.length);
-            buf8 = new Uint8Array(buf);
-            data = new Uint32Array(buf);
-
-            data[0] = 0x01020304;
-            if (buf8[0] = 0x04) {
-                bigEndian = false;
-            } else {
-                bigEndian = true;
             }
 
-        }
-        else {
-            data = imageData.data;
         }
 
         self.beamRow = 0;
@@ -748,7 +760,7 @@ EstyJs.Display = function (opts) {
             return;
         }
 
-        if (screenRowStart < 0xfffff) {
+        if (screenRowStart < 0xfffff && (flipFlop)) {
             if (buf8 != null) {
                 optimisedScreenDraw();
             }
@@ -806,6 +818,10 @@ EstyJs.Display = function (opts) {
 
     self.setFrameRate = function (val) {
         frameRate = val;
+    }
+
+    self.setFrameSkip = function (val) {
+        frameSkip = val;
     }
 
     self.setSnapshotRegs = function (data) {

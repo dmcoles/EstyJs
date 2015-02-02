@@ -655,7 +655,7 @@ EstyJs.mfp = function (opts) {
     }
 
     self.doInterrupts = function (processor) {
-        return (((interruptPendingA & (~interruptInServiceA)) | (interruptPendingB & (~interruptInServiceB))) != 0);
+        return (((interruptPendingA & (~interruptInServiceA)) | (interruptPendingB & (~interruptInServiceB))) );
     }
 
     self.setFloppyGpio = function () {

@@ -3,6 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "EstyJs", ".", "{6D16BB65-7282-488D-BFAA-73939620EA95}"
 	ProjectSection(WebsiteProperties) = preProject
+		Frontpage = "false"
 		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
 		Debug.AspNetCompiler.VirtualPath = "/EstyJs"
 		Debug.AspNetCompiler.PhysicalPath = "..\EstyJs\"
@@ -18,7 +19,7 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "EstyJs", ".", "{6D16BB65-72
 		Release.AspNetCompiler.ForceOverwrite = "true"
 		Release.AspNetCompiler.FixedNames = "false"
 		Release.AspNetCompiler.Debug = "False"
-		VWDPort = "40904"
+		VWDPort = "51122"
 	EndProjectSection
 EndProject
 Global

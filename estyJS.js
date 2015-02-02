@@ -9,6 +9,8 @@ function EstyJs(output) {
     var frameCount = 0;
     var lastFrame = window.performance.now();
 
+    var nextFrame = 0;
+
 	var running = true;
 	
 	var soundEnabled = true;
@@ -51,7 +53,8 @@ function EstyJs(output) {
     });
     
     var sound = EstyJs.Sound({
-        fdc: fdc
+        fdc: fdc,
+        bug: bug
     });
 
     var io = EstyJs.io({
@@ -75,7 +78,7 @@ function EstyJs(output) {
 	});
 
 	var display = EstyJs.Display({
-		memory : memory,
+	    memory : memory,
 		io : io,
 		fdc : fdc,
 		processor : processor,
@@ -98,9 +101,10 @@ function EstyJs(output) {
 	processor.setup();
 	sound.setProcessor(processor);
 	memory.setProcessor(processor);
-	
+
+	nextFrame = window.performance.now()+20;
+	//setInterval(runframe, 20);
 	setTimeout(runframe, 20);
-	//requestAnimationFrame(runframe);
 
 	function runframe() {
 		if (running & memory.loaded==1) {
@@ -108,9 +112,10 @@ function EstyJs(output) {
 				self.reset();
 				firstFrame = false;
 			}
-            var currTime = window.performance.now();
 
-			//var reqFrames = (currTime - startTime)/20;		
+        var currTime = window.performance.now();
+
+//var reqFrames = (currTime - startTime)/20;		
 			//while (frameCount< reqFrames)
 			{
 				display.startFrame();			
@@ -132,11 +137,13 @@ function EstyJs(output) {
 				frameCount++;
 			}
         }
-        display.setFrameRate(Math.floor(2000 / Math.max(20, window.performance.now() - currTime)));
+		display.setFrameRate(2000/(currTime - lastFrame));
 
-		var nextframe = Math.max(1,20-(window.performance.now()-currTime));
+		lastFrame = currTime;
 
-		setTimeout(runframe, nextframe );
+        nextFrame = nextFrame+20;
+	    //setTimeout(runframe, Math.max(0,20-(~~(window.performance.now()-lastFrame+1))));
+        setTimeout(runframe,nextFrame-window.performance.now())
 	}
 	
 	self.reset = function(){
@@ -188,7 +195,11 @@ function EstyJs(output) {
 		keyboard.KeypadJoystick = joyEnabled;
 	}
 
-	self.setMemory = function (mem1mb) {
+    self.setFrameskip = function (frameSkipEnabled) {
+        display.Frameskip = frameSkipEnabled;
+    }
+
+    self.setMemory = function (mem1mb) {
 	    if (mem1mb) {
 	        memory.setMemSize(1024);
 	        io.setRamBanks(2);

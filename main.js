@@ -87,6 +87,11 @@ function changeJoystick() {
 	estyjs.setJoystick($('#joystick').prop('checked'));
 }
 
+function changeFrameskip() {
+    estyjs.setFrameskip($('#frameskip').prop('checked'));
+}
+
+
 function changeRamSize() {
     estyjs.setMemory($('#ram').prop('checked'));
 }
