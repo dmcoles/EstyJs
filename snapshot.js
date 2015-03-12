@@ -1,5 +1,6 @@
 // snapshot file handling emulation routines for EstyJs
 // written by Darren Coles
+"use strict";
 
 EstyJs.SnapshotFile = function (opts) {
     var self = {};

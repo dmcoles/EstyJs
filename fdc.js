@@ -1,5 +1,6 @@
 // fdc (wd1770) emulation routines for EstyJS
 // written by Darren Coles
+"use strict";
 
 EstyJs.fdc = function (opts) {
     var self = {};
@@ -26,8 +27,9 @@ EstyJs.fdc = function (opts) {
     var dataReg = 0;
     var driveStatusA = 0x64; //
     var driveStatusB = 0x64; //
-    var hblSinceLastcommandA = 0;
-    var hblSinceLastcommandB = 0;
+
+    var hblCountA = 0;  //number of hbls since last command A
+    var hblCountB = 0; //number of hbls since last command B
 
     var driveAcurrentTrack = 0;
     var driveBcurrentTrack = 0;
@@ -218,10 +220,10 @@ EstyJs.fdc = function (opts) {
     function resetHblSinceLastCommand() {
         switch (selectedDrive) {
             case 'A':
-                hblSinceLastCommandA = 0;
+                hblCountA = 0;
                 break;
             case 'B':
-                hblSinceLastCommandB = 0;
+                hblCountB = 0;
                 break;
         }
     }
@@ -241,14 +243,14 @@ EstyJs.fdc = function (opts) {
         switch (commandNo & 0xf0) {
             case 0x0:
                 //track 0 seek
-                bug.say(sprintf("fdc process command - restore %s", selectedDrive));
+                //bug.say(sprintf("fdc process command - restore %s", selectedDrive));
                 commandCompleteTimer = 10;
                 //set busy flag
 
                 break;
             case 0x10:
                 //seek track				
-                bug.say(sprintf("fdc process command - seek %s - track %d", selectedDrive, dataReg));
+                //bug.say(("fdc process command - seek %s - track %d", selectedDrive, dataReg));
                 commandCompleteTimer = 5;
                 break;
             case 0x20:
@@ -281,12 +283,12 @@ EstyJs.fdc = function (opts) {
                 break;
             case 0x80:
                 commandCompleteTimer = 30;
-                bug.say(sprintf("fdc: command read sector - %s - side: %d - track: %d - sector: %d - sector count: %d - addr: $%06x", selectedDrive, driveSide, trackNo, sectorNo, sectorCount, dmaAddr));
+                //bug.say(sprintf("fdc: command read sector - %s - side: %d - track: %d - sector: %d - sector count: %d - addr: $%06x", selectedDrive, driveSide, trackNo, sectorNo, sectorCount, dmaAddr));
                 dmaStatusReg = 1 | (sectorCount ? 2 : 0);
                 mfp.setFloppyGpio();
                 break;
             case 0x90:
-                bug.say(sprintf("fdc: command read sector multiple - %s - side: %d - track: %d - sector: %d - sector count: %d - addr: $%06x", selectedDrive, driveSide, trackNo, sectorNo, sectorCount, dmaAddr));
+                //bug.say(sprintf("fdc: command read sector multiple - %s - side: %d - track: %d - sector: %d - sector count: %d - addr: $%06x", selectedDrive, driveSide, trackNo, sectorNo, sectorCount, dmaAddr));
                 commandCompleteTimer = 5;
                 if (selectedDrive != '') {
                     var diskGeo = getDiskGeometry();
@@ -483,19 +485,19 @@ EstyJs.fdc = function (opts) {
 
     self.processRow = function () {
         if (driveStatusA & 0x80) {
-            hblSinceLastCommandA++;
-            if ((hblSinceLastCommandA > 200 * 50 * 2)) {
+            hblCountA++;
+            if ((hblCountA > 200 * 50 * 2)) {
                 driveStatusA &= 0x7f;
-                hblSinceLastCommandA = 0;
+                hblCountA = 0;
             }
 
         }
 
         if (driveStatusB & 0x80) {
-            hblSinceLastCommandB++;
-            if ((hblSinceLastCommandB > 200 * 50 * 2)) {
+            hblCountB++;
+            if ((hblCountB > 200 * 50 * 2)) {
                 driveStatusB &= 0x7f;
-                hblSinceLastCommandB = 0;
+                hblCountB = 0;
             }
 
         }

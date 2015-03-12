@@ -1,5 +1,6 @@
 // display emulation routines for EstyJs
 // written by Darren Coles
+"use strict";
 
 EstyJs.Display = function (opts) {
     var self = {};
@@ -52,7 +53,9 @@ EstyJs.Display = function (opts) {
 
     var frameRate = 0;
 
-    var frameSkip = true;
+    var frameSkip = false;
+
+    var showSpeedPct = false;
 
     var widths = new Uint8Array([160, 160, 160]);
 
@@ -303,7 +306,6 @@ EstyJs.Display = function (opts) {
     }
 
     function standardScreenDraw() {
-
         var scrnAddr;
 
         var colour;
@@ -728,7 +730,7 @@ EstyJs.Display = function (opts) {
                     context.fillText(text[1], 600, 395);
                 }
 
-                context.fillText(frameRate.toString() + "%", 10, 15);
+                if (showSpeedPct) context.fillText(frameRate.toFixed(2) + "%", 10, 15);
 
             }
 
@@ -822,6 +824,10 @@ EstyJs.Display = function (opts) {
 
     self.setFrameSkip = function (val) {
         frameSkip = val;
+    }
+
+    self.setShowSpeedPct = function (val) {
+        showSpeedPct = val;
     }
 
     self.setSnapshotRegs = function (data) {

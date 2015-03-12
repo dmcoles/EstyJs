@@ -1,5 +1,6 @@
 // main block for EstyJs
 // written by Darren Coles
+"use strict";
 
 function EstyJs(output) {
 
@@ -109,7 +110,8 @@ function EstyJs(output) {
 	function runframe() {
 		if (running & memory.loaded==1) {
 			if (firstFrame) {
-				self.reset();
+			    sound.init();
+			    self.reset();
 				firstFrame = false;
 			}
 
@@ -121,6 +123,7 @@ function EstyJs(output) {
 				display.startFrame();			
 				sound.startFrame();
 				processor.vblInterrupt();
+				keyboard.checkJoystick();
 				while (display.beamRow<313) {
 					display.startRow();
 					mfp.startRow();
@@ -141,9 +144,9 @@ function EstyJs(output) {
 
 		lastFrame = currTime;
 
-        nextFrame = nextFrame+20;
-	    //setTimeout(runframe, Math.max(0,20-(~~(window.performance.now()-lastFrame+1))));
-        setTimeout(runframe,nextFrame-window.performance.now())
+        //nextFrame = nextFrame+20;
+	    setTimeout(runframe, Math.max(0,20-(~~(window.performance.now()-lastFrame+1))));
+        //setTimeout(runframe,nextFrame-window.performance.now())
 	}
 	
 	self.reset = function(){
@@ -195,8 +198,12 @@ function EstyJs(output) {
 		keyboard.KeypadJoystick = joyEnabled;
 	}
 
+    self.setShowPct = function (ShowPctEnabled) {
+        display.setShowSpeedPct(ShowPctEnabled);
+    }
+
     self.setFrameskip = function (frameSkipEnabled) {
-        display.Frameskip = frameSkipEnabled;
+        display.setFrameskip(frameSkipEnabled);
     }
 
     self.setMemory = function (mem1mb) {
@@ -217,6 +224,6 @@ function EstyJs(output) {
 	self.getMouseLocked = function() {
         return keyboard.mouseLocked();
 	}
-	
+
 	return self;
 }

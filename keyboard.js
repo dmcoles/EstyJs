@@ -1,5 +1,6 @@
 // keyboard emulation routines for EstyJs
 // written by Darren Coles
+"use strict";
 
 EstyJs.Keyboard = function (opts) {
     var self = {};
@@ -70,8 +71,8 @@ EstyJs.Keyboard = function (opts) {
 
     var locked = false;
 
-    readData = 0;
-    writeData = 0;
+    var readData = 0;
+    var writeData = 0;
 
     var keyCodes = {
         27: { scancode: 0x01 }, //	Esc
@@ -193,8 +194,8 @@ EstyJs.Keyboard = function (opts) {
           document.webkitPointerLockElement === requestedElement) {
             // Pointer was just locked
             // Enable the mousemove listener
-              document.onmousemove = mouseMove2;
-              locked = true;
+            document.onmousemove = mouseMove2;
+            locked = true;
         } else {
             // Pointer was just unlocked
             // Disable the mousemove listener
@@ -284,7 +285,7 @@ EstyJs.Keyboard = function (opts) {
         //75 = left cursor, 77 = right cursor, 80 = down, 72 = up
         if (self.KeypadJoystick && (keyCode == 75 || keyCode == 77 || keyCode == 72 || keyCode == 80) || keyCode == 0x1D) {
             switch (keyCode) {
-                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire                            
+                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire                                   
                 case 72:
                     //up
                     joystickPos |= 1;
@@ -343,7 +344,7 @@ EstyJs.Keyboard = function (opts) {
 
         if (self.KeypadJoystick && (keyCode == 75 || keyCode == 77 || keyCode == 72 || keyCode == 80) || keyCode == 0x1D) {
             switch (keyCode) {
-                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire                            
+                //bit 0 = left, bit 1 = right, bit 2 = up, bit 3 = down, bit 7 = fire                                   
                 case 72:
                     //up
                     joystickPos &= 0xff - 1;
@@ -393,6 +394,48 @@ EstyJs.Keyboard = function (opts) {
         if (self.active && !evt.metaKey) return false;
     }
 
+    self.checkJoystick = function () {
+        var newJoystickPos = 0;
+
+        var gamepad = null;
+        if (navigator.getGamepads && navigator.getGamepads().length > 0) gamepad = navigator.getGamepads()[0];
+
+        if (gamepad != null) {
+            //up
+            if (gamepad.buttons.length > 12 && gamepad.buttons[12].pressed) newJoystickPos |= 1;
+            //down
+            if (gamepad.buttons.length > 13 && gamepad.buttons[13].pressed) newJoystickPos |= 2;
+            //left
+            if (gamepad.buttons.length > 14 && gamepad.buttons[14].pressed) newJoystickPos |= 4;
+            //right
+            if (gamepad.buttons.length > 15 && gamepad.buttons[15].pressed) newJoystickPos |= 8;
+
+            //up
+            if (gamepad.axes.length > 0 && gamepad.axes[1] < -0.5) newJoystickPos |= 1;
+            //down
+            if (gamepad.axes.length > 0 && gamepad.axes[1] > 0.5) newJoystickPos |= 2;
+            //left
+            if (gamepad.axes.length > 1 && gamepad.axes[0] < -0.5) newJoystickPos |= 4;
+            //right
+            if (gamepad.axes.length > 1 && gamepad.axes[0] > 0.5) newJoystickPos |= 8;
+
+            //any other fire buttons
+            for (var i = 0; i < 12; i++) {
+                if (gamepad.buttons.length > i && gamepad.buttons[i].pressed) newJoystickPos |= 128;
+            }
+
+            if (newJoystickPos != joystickPos) {
+                joystickPos = newJoystickPos
+                if (joystickMode == 'E' && !port0Mouse) {
+                    //fe = joystick 0, ff = joystick 1
+                    dataOut.push(0xff);
+                    dataOut.push(joystickPos)
+                }
+            }
+        }
+
+        
+    }
 
     self.readkeys = function () {
     }
@@ -514,6 +557,8 @@ EstyJs.Keyboard = function (opts) {
         if (keyCommands.length > 0) {
 
             var keyCmd = keyCommands[0];
+
+            var paramCount;
 
             switch (keyCmd) {
                 case 0x07:
@@ -880,7 +925,7 @@ EstyJs.Keyboard = function (opts) {
         }
     }
 
-    self.mouseLocked = function() {
+    self.mouseLocked = function () {
         return locked;
     }
 

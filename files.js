@@ -1,5 +1,6 @@
 ﻿ //  file handling routines for EstyJs
 // written by Darren Coles
+"use strict";
 
 EstyJs.fileManager = function (opts) {
     var self = {};

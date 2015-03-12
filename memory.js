@@ -1,5 +1,6 @@
 // memory emulation routines for EstyJs
 // written by Darren Coles
+"use strict";
 
 EstyJs.Memory = function (opts) {
     var self = {};
@@ -67,7 +68,7 @@ EstyJs.Memory = function (opts) {
 
         if (addr >= 0xf00040 & addr < 0xfa0000) {
             //illegal
-            bug.say(sprintf('invalid memory read $%08x', addr));
+            //bug.say(sprintf('invalid memory read $%08x', addr));
             processor.memoryError(addr);
         }
 
@@ -94,9 +95,9 @@ EstyJs.Memory = function (opts) {
         addr = addr & 0xffffff;
 
         //mirror first 8 bytes of rom at 0
-        if (addr < 8) {
+        /*if (addr < 8) {
             return romDataView.getUint16(addr, false);
-        }
+        }*/
 
         if (addr < ram.byteLength) {
             return ramDataView.getUint16(addr, false);
@@ -218,6 +219,9 @@ EstyJs.Memory = function (opts) {
 
     self.reset = function () {
         for (var i = 0; i < ram.byteLength; i++) ram[i] = 0;
+
+        //mirror 8 bytes of ROM in RAM
+        for (var i = 0; i < 8; i++) ram[i] = rom[i];
     }
 
     self.setProcessor = function (p) {

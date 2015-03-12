@@ -71,6 +71,7 @@
 //fffa21 - timerb data (write)
 
 //fffa21 - timerb data (read)
+"use strict";
 
 EstyJs.io = function (opts) {
     var self = {};
@@ -267,7 +268,7 @@ EstyJs.io = function (opts) {
 
         if ((addr & 1) == 0) return;
 
-        bug.say(sprintf('invalid io write $%06x', addr));
+        //bug.say(sprintf('invalid io write $%06x', addr));
     }
 
     self.read = function (addr) {
@@ -405,7 +406,7 @@ EstyJs.io = function (opts) {
             return; //return undefined
         }
 
-        bug.say(sprintf('invalid io read $%06x', addr));
+        //bug.say(sprintf('invalid io read $%06x', addr));
         return 0xff;
     }
 

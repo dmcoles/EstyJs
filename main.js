@@ -1,5 +1,6 @@
 // main initialisation routines for EstyJs
 // written by Darren Coles
+"use strict";
 
 var estyjs = null;			
 
@@ -87,6 +88,10 @@ function changeJoystick() {
 	estyjs.setJoystick($('#joystick').prop('checked'));
 }
 
+function changeShowPct() {
+    estyjs.setShowPct($('#showpct').prop('checked'));
+}
+
 function changeFrameskip() {
     estyjs.setFrameskip($('#frameskip').prop('checked'));
 }
@@ -110,4 +115,19 @@ function mouseLocked() {
     }
     setTimeout(mouseLocked, 250);
 
+}
+
+function fullScreen() {
+    if ($('#accordion').is(':hidden')) {
+        $("#accordion").show();
+        $("#EstyJsOutput").width(640);
+        $("#estyjs").css("left", 420);
+        $("#btnFullscreen span").text("Expand");
+    }
+    else {
+        $("#accordion").hide();
+        $("#EstyJsOutput").width(window.innerWidth-80);
+        $("#estyjs").css("left", 20);
+        $("#btnFullscreen span").text("Shrink");
+    }
 }

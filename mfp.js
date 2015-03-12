@@ -1,5 +1,7 @@
 // mfp emulation routines for EstyJS
 // written by Darren Coles
+"use strict";
+
 EstyJs.mfp = function (opts) {
     var self = {};
 
@@ -437,7 +439,7 @@ EstyJs.mfp = function (opts) {
             throw "memory error";
         }
 
-        bug.say(sprintf('invalid mfp write $%06x', addr));
+        //bug.say(sprintf('invalid mfp write $%06x', addr));
 
     }
 
@@ -554,7 +556,7 @@ EstyJs.mfp = function (opts) {
             return; //return undefined
         }
 
-        bug.say(sprintf('invalid mfp read $%06x', addr));
+        //bug.say(sprintf('invalid mfp read $%06x', addr));
         return 0x00;
 
     }

@@ -1,5 +1,6 @@
 // io registers emulation routines for EstyJs
 // written by Darren Coles
+"use strict";
 
 EstyJs.bug = function() {
 	var self = {};
@@ -18,7 +19,7 @@ EstyJs.bug = function() {
 *  http://www.webtoolkit.info/
 */
  
-	sprintfWrapper = {
+	var sprintfWrapper = {
 		init: function () {
 			if (typeof arguments == "undefined") {
 				return null;
@@ -145,7 +146,7 @@ EstyJs.bug = function() {
 		}
 	}
 
-	sprintf = sprintfWrapper.init;	
+	self.sprintf = sprintfWrapper.init;	
 	
 	return self;
 }

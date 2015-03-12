@@ -26,7 +26,7 @@
 //   of the License, or (at your option) any later version.
 //   This program is distributed in the hope that it will be useful,
 //   but WITHOUT ANY WARRANTY; without even the implied warranty of
-//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See thes
 //   GNU General Public License for more details.
 //
 //   You should have received a copy of the GNU General Public License
@@ -35,8 +35,13 @@
 //
 // *******************************************************************************/
 
+"use strict";
+
 EstyJs.Sound = function (opts) {
     var self = {};
+
+    var audioContext = null;
+    var audioNode = null;
 
     var bug = opts.bug;
 
@@ -432,41 +437,10 @@ EstyJs.Sound = function (opts) {
  ];
 
 
-
-    var AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (AudioContext) {
-        /* Use Web Audio API */
-        audioBuffer = new Array();
-
-        var audioContext = new AudioContext();
-        if (audioContext.createJavaScriptNode != null) {
-            var audioNode = audioContext.createJavaScriptNode(16384, 0, 1);
-        } else if (audioContext.createScriptProcessor != null) {
-            var audioNode = audioContext.createScriptProcessor(16384, 0, 1);
-        } else {
-            var audioNode = null;
-        }
-
-        if (audioNode != null) {
-            onAudioProcess = function (e) {
-                var buffer = e.outputBuffer.getChannelData(0);
-                fillBuffer(buffer);
-            };
-
-            audioNode.onaudioprocess = onAudioProcess;
-            audioNode.connect(audioContext.destination);
-        }
-    }
-    else if (typeof (Audio) != 'undefined') {
-        /* Use audio data api */
-        audioOutput = new Audio();
-        if (typeof (audioOutput.mozSetup) != 'undefined') {
-            audioBuffer = new Array();
-            audioBuffer2 = new Array();
-            audioOutput.mozSetup(1, samplesPerFrame * 50);
-        } else {
-            audioOutput = null;
-        }
+    
+    function processAudio(e)
+    {
+        fillBuffer(e.outputBuffer.getChannelData(0));
     }
 
     function AY8912_reset() {
@@ -816,7 +790,6 @@ EstyJs.Sound = function (opts) {
     }
 
     function RenderSample() {
-
         var VolA, VolB, VolC, AY_Left, lOut1, lOut2, lOut3, AY_NextEvent;
 
         VolA = 0; VolB = 0; VolC = 0;
@@ -1014,31 +987,34 @@ EstyJs.Sound = function (opts) {
     }
 
     function fillBuffer(outputArray) {
-        var n = outputArray.length;
-        var n2 = audioBuffer.length;
-        if (!soundEnabled) {
-            n2 = 0;
-        }
+        try {
+            bug.say("audio fillBuffer");
+            var n = outputArray.length;
+            var n2 = audioBuffer.length;
+            if (!soundEnabled) {
+                n2 = 0;
+            }
 
-        if (audioBuffer.length < n) resampleBuffer(n);
+            resampleBuffer(n);
 
-        for (var i = 0; i < n; i++) {
-            outputArray[i] = audioBuffer[i];
+            for (var i = 0; i < n; i++) {
+                outputArray[i] = audioBuffer[i];
+            }
+
+            audioBuffer.splice(0, n);
         }
-        audioBuffer.splice(0, n);
+        catch (e)
+        {
+            bug.say("audio fillBuffer error "+e.message);
+        }
 
     }
 
     function resampleBuffer(count) {
         var newBuffer = new Array();
-
-
-        //bug.say(sprintf("resample audio %d % d", count, audioBuffer.length));
-
         for (var i = 0; i < count; i++) {
             newBuffer.push(audioBuffer[~ ~(i / count * audioBuffer.length)]);
         }
-
         audioBuffer = newBuffer;
     }
 
@@ -1135,6 +1111,41 @@ EstyJs.Sound = function (opts) {
 
     self.setProcessor = function (p) {
         processor = p;
+    }
+
+    self.init = function () {
+        var AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+            /* Use Web Audio API */
+            audioBuffer = new Array();
+
+            audioContext = new AudioContext();
+            if (audioContext.createJavaScriptNode != null) {
+                audioNode = audioContext.createJavaScriptNode(16384, 1, 1);
+            } else if (audioContext.createScriptProcessor != null) {
+                audioNode = audioContext.createScriptProcessor(16384, 1, 1);
+            } else {
+                audioNode = null;
+            }
+
+            if (audioNode != null) {
+                audioNode.onaudioprocess = processAudio;
+
+                audioNode.connect(audioContext.destination);
+            }
+        }
+        else if (typeof (Audio) != 'undefined') {
+            /* Use audio data api */
+            audioOutput = new Audio();
+            if (typeof (audioOutput.mozSetup) != 'undefined') {
+                audioBuffer = new Array();
+                audioBuffer2 = new Array();
+                audioOutput.mozSetup(1, samplesPerFrame * 50);
+            } else {
+                audioOutput = null;
+            }
+        }
+
     }
 
     return self;

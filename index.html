@@ -73,7 +73,7 @@
 				</ol>
                 <br/>
 				Hints:<br/>
-				<br/>Joystick 1 is emulated using cursor keys and ctrl.
+				<br/>Joystick 1 is emulated using cursor keys and ctrl (or a real usb joypad).
 				<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
 			</div>
 			
@@ -90,72 +90,79 @@
 			<canvas id = "EstyJsOutput" width="640" height="400" >
 			</canvas>
 			<div id = "buttonpanel">
-            <small><button id="btnLocked" onclick="lockMouse();">Lock</button></small>
-			<small><button onclick="reset()" id="btnReset">Reset</button>
-			<button onclick="pauseResume()" id="btnPause">Pause</button>
-			<button onclick="soundToggle()" id="btnSound">Sound off</button>
-			<button onclick="document.getElementById('selectedFile').click();"  id="btnBrowse">Browse (A)</button>
-			<button onclick="document.getElementById('selectedFileB').click();"  id="Button2">Browse (B)</button>
-			<button onclick="openFile()" style="display: none;" id="btnOpen">Open</button>
-            </small>
-			<input type="file" id="selectedFile" accept=".sts,.st,.msa,.zip" style="display: none;" />
-			<input type="file" id="selectedFileB" accept=".sts,.st,.msa,.zip" style="display: none;" />
-            <br/>
-			<input type="checkbox" id="joystick" checked="checked" onclick="changeJoystick()" >Joystick</input>
-            <input type="checkbox" id="frameskip" checked="checked" onclick="changeFrameskip()">Frameskip</input>
-            <input type="checkbox" id="ram" checked="checked" onclick="changeRamSize()" >1Meg</input>
-            <select id="diskImages">
-                <option value="Another World (1991)(Delphine)(Disk 1 of 2)[cr Elite][t][a].st">Another world - disk 1</option>
-                <option value="Another World (1991)(Delphine)(Disk 2 of 2)[cr Elite].st">Another world - disk 2</option>            
-				<option value="Atomino (1990)(Psygnosis)(M3)[cr Empire].st">Atomino</option>
-				<option value="Batman - The Movie (1989)(Ocean)[cr Atarilegend][t].st">Batman the movie</option>
-				<option value="Bubble Bobble (1987)(Firebird)[cr TEX][t].st">Bubble bobble</option>
-				<option value="Buggy Boy (1988)(Elite)[cr Bladerunners].st">Buggy boy</option>
-				<option value="Carrier Command (1988)(Rainbird).st">Carrier command</option>
-                <option value="Chaos Engine, The (1993)(Renegade)(Disk 1 of 2)[cr Cynix].st">Chaos Engine - disk 1</option>
-                <option value="Chaos Engine, The (1993)(Renegade)(Disk 2 of 2)[cr Cynix].st">Chaos Engine - disk 2</option>
-                <option value="Chuck Rock (1991)(Core Design)(Disk 1 of 2)[cr Hotline][t2].st">Chuck rock - disk 1</option>
-                <option value="Chuck Rock (1991)(Core Design)(Disk 2 of 2)[cr Hotline][t2].st">Chuck rock - disk 2</option>
-                <option value="Continental Circus (1989)(Sales Curve)[cr Medway Boys][a2][one disk].st">Continental circus</option>
-                <option value="Deuteros (1991)(Activision)(M3)(Disk 1 of 2)[cr Replicants].st">Deuteros - disk 1</option>
-                <option value="Deuteros (1991)(Activision)(M3)(Disk 2 of 2)[cr Replicants].st">Deuteros - disk 2</option>
-                <option value="Dragon Breed (1989)(Activision)[cr Replicants][t][a].st">Dragon breed</option>
-                <option value="DungeonMasterAtariST.st">Dungeon master</option>
-                <option value="Exile (1991)(Audiogenic)[cr Factory].st">Exile (doesnt work)</option>
-                <option value="Fire and Ice (1992)(Graftgold)(Disk 1 of 2)[cr Cynix].st">Fire and ice - disk 1</option>
-                <option value="Fire and Ice (1992)(Graftgold)(Disk 2 of 2)[cr Cynix].st">Fire and ice - disk 2</option>
-                <option value="Frontier - Elite II (1993)(Frontier Developments)(SW).st">Frontier</option>
-                <option value="Gauntlet II (1986)(Atari Corp.)[cr Medway Boys][t][one disk].st">Gauntlet II</option>
-                <option value="Ghosts 'n' Goblins (1990)(Elite)[cr][t3].st">Ghosts and goblins</option>
-                <option value="Gods (1991)(Renegade)[cr Vmax][t2][one disk].st">Gods</option>               
-                <option value="Indy Heat (1992)(Sales Curve)[cr Elite].st">Indy Heat</option>                              
-                <option value="International Karate plus (1988)(System 3).st">IK+</option>               
-                <option value="James Pond II - Codename Robocod (1992)(Vectordean)[cr Elite][t].st">James Pond II</option>
-                <option value="Kick Off (1989)(Anco)[cr Delight].st">Kick off</option>
-                <option value="Kid Gloves (19xx)(Millennium)[cr ACF][t].st">Kid Gloves</option>               
-                <option value="Lemmings (1990)(Psygnosis)[cr Replicants - ST Amigos][t2].st">Lemmings</option>                               
-                <option value="Lotus Esprit Turbo Challenge (1990)(Gremlin)[cr Empire][a].st">Lotus esprit</option>               
-                <option value="Nebulus (1988)(Hewson)[cr Atarilegend].st">Nebulus</option>
-                <option value="Nitro (1990)(Psygnosis)[cr Empire][t][a].st">Nitro</option>               
-                <option value="No Second Price (1993)(Thalion)[cr Superior].st">No second prize</option>               
-                <option value="Oids (1987)(FTL)[cr Was -Not Was-].st">Oids</option>               
-                <option value="Pang (1990)(Ocean)[cr Replicants][t][a].st">Pang (no bottom border)</option>               
-                <option value="Prince of Persia (1990)(Broderbund)[m].st">Prince of persia</option>               
-                <option value="Rick Dangerous (1989)(Core Design - Firebird)[cr Medway Boys][t].st">Rick dangerous</option>    
-                <option value="Saint Dragon (1990)(Sales Curve)[cr Replicants][t].st">Saint dragon</option>    
-                <option value="Sensible Soccer (1992)(Renegade)(M4)(Disk 1 of 2)[cr ICS].st">Sensible soccer - disk 1</option>    
-                <option value="Sensible Soccer (1992)(Renegade)(M4)(Disk 2 of 2)[cr ICS].st">Sensible soccer - disk 2</option>    
-                <option value="Speedball 2 - Brutal Deluxe (1990)(Image Works)[cr Replicants - ST Amigos].st">Speedball 2</option>               
-                <option value="Stunt Car Racer (1989)(Micro Style)[cr].st">Stunt car racer</option>               
-                <option value="Super Cars II (1991)(Gremlin)[cr Elite].st">Supercars II</option>               
-                <option value="Toki (1991)(Ocean)[cr BBC - Medway Boys][t].st">Toki</option>                               
-                <option value="Turrican II (1991)(Rainbow Arts)[cr Replicants][t].st">Turrican II</option>               
-                <option value="Vroom (1991)(Lankhor).st">Vroom</option>               
-			</select> 
-			<small><button onclick="openFileInDrive($('#diskImages').val(),'A');" id="Button1">Drive A</button></small>
-			<small><button onclick="openFileInDrive($('#diskImages').val(),'B');" id="Buttonw">Drive B</button></small>
-			
-			</div>
+                <small><button id="btnFullscreen" onclick="fullScreen();">Expand</button></small>
+                <small><button id="btnLocked" onclick="lockMouse();">Lock</button></small>
+                <small><button onclick="reset()" id="btnReset">Reset</button></small>
+                <small><button onclick="pauseResume()" id="btnPause">Pause</button></small>
+                <small><button onclick="soundToggle()" id="btnSound">Sound off</button></small>
+                <br />
+                <div style="margin: 0px; padding:0px; clear: both; height: 6px">
+                    &nbsp;
+                </div>
+                <input type="file" id="selectedFile" accept=".sts,.st,.msa,.zip" style="display: none;" />
+                <input type="file" id="selectedFileB" accept=".sts,.st,.msa,.zip" style="display: none;" />
+                <select id="diskImages">
+                    <option value="Another World (1991)(Delphine)(Disk 1 of 2)[cr Elite][t][a].st">Another world - disk 1</option>
+                    <option value="Another World (1991)(Delphine)(Disk 2 of 2)[cr Elite].st">Another world - disk 2</option>
+                    <option value="Atomino (1990)(Psygnosis)(M3)[cr Empire].st">Atomino</option>
+                    <option value="Batman - The Movie (1989)(Ocean)[cr Atarilegend][t].st">Batman the movie</option>
+                    <option value="Bubble Bobble (1987)(Firebird)[cr TEX][t].st">Bubble bobble</option>
+                    <option value="Buggy Boy (1988)(Elite)[cr Bladerunners].st">Buggy boy</option>
+                    <option value="Carrier Command (1988)(Rainbird).st">Carrier command</option>
+                    <option value="Chaos Engine, The (1993)(Renegade)(Disk 1 of 2)[cr Cynix].st">Chaos Engine - disk 1</option>
+                    <option value="Chaos Engine, The (1993)(Renegade)(Disk 2 of 2)[cr Cynix].st">Chaos Engine - disk 2</option>
+                    <option value="Chuck Rock (1991)(Core Design)(Disk 1 of 2)[cr Hotline][t2].st">Chuck rock - disk 1</option>
+                    <option value="Chuck Rock (1991)(Core Design)(Disk 2 of 2)[cr Hotline][t2].st">Chuck rock - disk 2</option>
+                    <option value="Continental Circus (1989)(Sales Curve)[cr Medway Boys][a2][one disk].st">Continental circus</option>
+                    <option value="Deuteros (1991)(Activision)(M3)(Disk 1 of 2)[cr Replicants].st">Deuteros - disk 1</option>
+                    <option value="Deuteros (1991)(Activision)(M3)(Disk 2 of 2)[cr Replicants].st">Deuteros - disk 2</option>
+                    <option value="Dragon Breed (1989)(Activision)[cr Replicants][t][a].st">Dragon breed</option>
+                    <option value="DungeonMasterAtariST.st">Dungeon master</option>
+                    <option value="Exile (1991)(Audiogenic)[cr Factory].st">Exile (doesnt work)</option>
+                    <option value="Fire and Ice (1992)(Graftgold)(Disk 1 of 2)[cr Cynix].st">Fire and ice - disk 1</option>
+                    <option value="Fire and Ice (1992)(Graftgold)(Disk 2 of 2)[cr Cynix].st">Fire and ice - disk 2</option>
+                    <option value="Frontier - Elite II (1993)(Frontier Developments)(SW).st">Frontier</option>
+                    <option value="Gauntlet II (1986)(Atari Corp.)[cr Medway Boys][t][one disk].st">Gauntlet II</option>
+                    <option value="Ghosts 'n' Goblins (1990)(Elite)[cr][t3].st">Ghosts and goblins</option>
+                    <option value="Gods (1991)(Renegade)[cr Vmax][t2][one disk].st">Gods</option>
+                    <option value="Indy Heat (1992)(Sales Curve)[cr Elite].st">Indy Heat</option>
+                    <option value="International Karate plus (1988)(System 3).st">IK+</option>
+                    <option value="James Pond II - Codename Robocod (1992)(Vectordean)[cr Elite][t].st">James Pond II</option>
+                    <option value="Kick Off (1989)(Anco)[cr Delight].st">Kick off</option>
+                    <option value="Kid Gloves (19xx)(Millennium)[cr ACF][t].st">Kid Gloves</option>
+                    <option value="Lemmings (1990)(Psygnosis)[cr Replicants - ST Amigos][t2].st">Lemmings</option>
+                    <option value="Lotus Esprit Turbo Challenge (1990)(Gremlin)[cr Empire][a].st">Lotus esprit</option>
+                    <option value="Nebulus (1988)(Hewson)[cr Atarilegend].st">Nebulus</option>
+                    <option value="Nitro (1990)(Psygnosis)[cr Empire][t][a].st">Nitro</option>
+                    <option value="No Second Price (1993)(Thalion)[cr Superior].st">No second prize</option>
+                    <option value="Oids (1987)(FTL)[cr Was -Not Was-].st">Oids</option>
+                    <option value="Pang (1990)(Ocean)[cr Replicants][t][a].st">Pang (no bottom border)</option>
+                    <option value="Prince of Persia (1990)(Broderbund)[m].st">Prince of persia</option>
+                    <option value="Rick Dangerous (1989)(Core Design - Firebird)[cr Medway Boys][t].st">Rick dangerous</option>
+                    <option value="Saint Dragon (1990)(Sales Curve)[cr Replicants][t].st">Saint dragon</option>
+                    <option value="Sensible Soccer (1992)(Renegade)(M4)(Disk 1 of 2)[cr ICS].st">Sensible soccer - disk 1</option>
+                    <option value="Sensible Soccer (1992)(Renegade)(M4)(Disk 2 of 2)[cr ICS].st">Sensible soccer - disk 2</option>
+                    <option value="Speedball 2 - Brutal Deluxe (1990)(Image Works)[cr Replicants - ST Amigos].st">Speedball 2</option>
+                    <option value="Stunt Car Racer (1989)(Micro Style)[cr].st">Stunt car racer</option>
+                    <option value="Super Cars II (1991)(Gremlin)[cr Elite].st">Supercars II</option>
+                    <option value="Toki (1991)(Ocean)[cr BBC - Medway Boys][t].st">Toki</option>
+                    <option value="Turrican II (1991)(Rainbow Arts)[cr Replicants][t].st">Turrican II</option>
+                    <option value="Vroom (1991)(Lankhor).st">Vroom</option>
+                </select>
+                <small><button onclick="openFileInDrive($('#diskImages').val(),'A');" id="Button1">Drive A</button></small>
+                <small><button onclick="openFileInDrive($('#diskImages').val(),'B');" id="Buttonw">Drive B</button></small>
+                <small><button onclick="document.getElementById('selectedFile').click();" id="btnBrowse">Browse (A)</button></small>
+                <small><button onclick="document.getElementById('selectedFileB').click();" id="Button2">Browse (B)</button></small>
+                <small><button onclick="openFile()" style="display: none;" id="btnOpen">Open</button></small>
+                <br />
+                <div style="margin: 0px; padding:0px; clear: both; height: 6px">
+                    &nbsp;
+                </div>
+                <input type="checkbox" id="joystick" checked="checked" onclick="changeJoystick()">Joystick</input>
+                <input type="checkbox" id="showpct"  onclick="changeShowPct()">Show Speed</input>
+                <input type="checkbox" id="frameskip"  onclick="changeFrameskip()">Frameskip</input>
+                <input type="checkbox" id="ram" checked="checked" onclick="changeRamSize()">1Meg</input>
+            </div>
 		</div>
 		
 		

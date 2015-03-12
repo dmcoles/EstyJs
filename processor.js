@@ -1,6 +1,7 @@
 
 // 68000 cpu emulator code for EstyJs
 // adapted from SAE - Scripted Amiga Emulator by Darren Coles
+"use strict";
 
 /**************************************************************************
 * SAE - Scripted Amiga Emulator
@@ -352,7 +353,7 @@ EstyJs.Processor = function (opts) {
     }
 
     function exEA_M_rid(ea, z) {
-        dp = (nextIWord());
+        var dp = (nextIWord());
         ea.a = add32(regs.a[ea.r], extWord(dp));
         ea.t = T_AD;
         return ea;
@@ -365,7 +366,7 @@ EstyJs.Processor = function (opts) {
     }
 
     function exEA_M_pcid(ea, z) {
-        dp = extWord(nextIWord());
+        var dp = extWord(nextIWord());
         ea.a = add32(regs.pc - 2, dp);
         ea.t = T_AD;
         return ea;
@@ -573,7 +574,7 @@ EstyJs.Processor = function (opts) {
             ea.a &= 0xffffff;
         }
         if ((ea.a & 1) && z != 1) {
-            BUG.say(sprintf('ldEA() ADDRESS ERROR $%08x, pc $%08x', ea.a, fault.pc));
+            //BUG.say(sprintf('ldEA() ADDRESS ERROR $%08x, pc $%08x', ea.a, fault.pc));
             //AMIGA.cpu.diss(fault.pc-8, 20);
             //AMIGA.cpu.dump();  
             exception3(ea.a, 1);
@@ -628,7 +629,7 @@ EstyJs.Processor = function (opts) {
                         ea.a &= 0xffffff;
                     }
                     if ((ea.a & 1) && z != 1) {
-                        BUG.say(sprintf('ldEA() ADDRESS ERROR $%08x, pc $%08x', ea.a, fault.pc));
+                        //BUG.say(sprintf('ldEA() ADDRESS ERROR $%08x, pc $%08x', ea.a, fault.pc));
                         //AMIGA.cpu.diss(fault.pc-8, 20);
                         //AMIGA.cpu.dump();  
                         exception3(ea.a, 1);
@@ -674,7 +675,7 @@ EstyJs.Processor = function (opts) {
             ea.a &= 0xffffff;
         }
         if ((ea.a & 1) && z != 1) {
-            BUG.say(sprintf('stEA() ADDRESS ERROR $%08x, pc $%08x', ea.a, fault.pc));
+            //BUG.say(sprintf('stEA() ADDRESS ERROR $%08x, pc $%08x', ea.a, fault.pc));
             //AMIGA.cpu.diss(fault.pc-8, 20);
             //AMIGA.cpu.dump();  
             exception3(ea.a, 1);
@@ -718,7 +719,7 @@ EstyJs.Processor = function (opts) {
                         ea.a &= 0xffffff;
                     }
                     if ((ea.a & 1) && z != 1) {
-                        BUG.say(sprintf('stEA() ADDRESS ERROR $%08x, pc $%08x', ea.a, fault.pc));
+                        //BUG.say(sprintf('stEA() ADDRESS ERROR $%08x, pc $%08x', ea.a, fault.pc));
                         //AMIGA.cpu.diss(fault.pc-8, 20);
                         //AMIGA.cpu.dump();  
                         exception3(ea.a, 1);
@@ -1306,7 +1307,7 @@ EstyJs.Processor = function (opts) {
 
         regs.c = false;
         if (s == 0) {
-            BUG.say(sprintf('I_DIVS NULL $%08x / $%08x', d, s));
+            //BUG.say(sprintf('I_DIVS NULL $%08x / $%08x', d, s));
             //regs.pc = fault.pc;
             return exception(5);
         } else {
@@ -1344,7 +1345,7 @@ EstyJs.Processor = function (opts) {
 
         regs.c = false;
         if (s == 0) {
-            BUG.say(sprintf('I_DIVU NULL $%08x / $%08x', d, s));
+            //BUG.say(sprintf('I_DIVU NULL $%08x / $%08x', d, s));
             //regs.pc = fault.pc;
             return exception(5);
         } else {
@@ -2372,14 +2373,14 @@ EstyJs.Processor = function (opts) {
             regs.pc = fault.pc;
             return exception(11);
         } else if ((op & 0xf000) == 0xa000) {
-            BUG.say(sprintf('I_ILLEGAL exception 10, line A[1010] emulator, op $%04x, pc $%08x', op, pc));
+            //BUG.say(sprintf('I_ILLEGAL exception 10, line A[1010] emulator, op $%04x, pc $%08x', op, pc));
             //AMIGA.cpu.diss(fault.pc - 8, 20);
             //AMIGA.cpu.dump();
             regs.pc = fault.pc;
             return exception(10);
         }
 
-        BUG.say(sprintf('I_ILLEGAL exception 4, op $%04x, pc $%08x', op, pc));
+        //BUG.say(sprintf('I_ILLEGAL exception 4, op $%04x, pc $%08x', op, pc));
         //AMIGA.cpu.diss(fault.pc - 8, 20);
         //AMIGA.cpu.dump();
         regs.pc = fault.pc;
@@ -2460,7 +2461,7 @@ EstyJs.Processor = function (opts) {
         regs.z = d == 0;
         regs.v = false;
         regs.c = false;
-        BUG.say(sprintf('I_TAS.%s d $%02x r $%02x', szChr(p.z), d, r));
+        //BUG.say(sprintf('I_TAS.%s d $%02x r $%02x', szChr(p.z), d, r));
         return p.cyc;
     }
 
@@ -4781,7 +4782,7 @@ EstyJs.Processor = function (opts) {
 
         //for (op = 0; op < 0x10000; op++) if (iTab[op].op !== -1 && !(iTab[op].p.cyc || iTab[op].p.cycTaken || iTab[op].p.cycTrue || iTab[op].p.cycFalse || typeof(iTab[op].p.cyc) == 'number')) console.log(iTab[op].mn, iTab[op].p.z);
 
-        BUG.say(sprintf('cpu.mkiTab() build %d instructions', cnt));
+        //BUG.say(sprintf('cpu.mkiTab() build %d instructions', cnt));
         return true;
     }
     /* ...end of the fun part. */
@@ -5251,7 +5252,7 @@ EstyJs.Processor = function (opts) {
     function setPC(pc) {
 
         if (pc & 1) {
-            BUG.say(sprintf('cpu.setPC() ADDRESS ERROR pc $%08x', pc));
+            //BUG.say(sprintf('cpu.setPC() ADDRESS ERROR pc $%08x', pc));
             //AMIGA.cpu.diss(fault.pc, 1);
             //AMIGA.cpu.dump();  
             exception3(pc, 0);
@@ -5264,7 +5265,7 @@ EstyJs.Processor = function (opts) {
         pc &= 0xffffff;
         }*/
         else if (pc >= 0 && pc < 4) {
-            BUG.say(sprintf('cpu.setPC() BUS ERROR pc $%08x', pc));
+            //BUG.say(sprintf('cpu.setPC() BUS ERROR pc $%08x', pc));
             //AMIGA.cpu.diss(fault.pc, 1);
             //AMIGA.cpu.dump();  
             //exception2(pc, 0);
@@ -5339,7 +5340,7 @@ EstyJs.Processor = function (opts) {
 
 
         if (n == 2) {
-            BUG.say(sprintf('cpu.exception() %d, regs.pc $%08x, fault.pc $%08x, fault.op $%04x, fault.ad $%08x, fault.ia %d', n, regs.pc, fault.pc, fault.op, fault.ad, fault.ia ? 1 : 0));
+            //BUG.say(sprintf('cpu.exception() %d, regs.pc $%08x, fault.pc $%08x, fault.op $%04x, fault.ad $%08x, fault.ia %d', n, regs.pc, fault.pc, fault.op, fault.ad, fault.ia ? 1 : 0));
 
             var ia = fault.ia;
             var wa = 0;
@@ -5355,7 +5356,7 @@ EstyJs.Processor = function (opts) {
             stEA(exEA(new effAddr(M_ripr, 7), 2), 2, cd);
 
         } else if (n == 3) {
-            BUG.say(sprintf('cpu.exception() %d, regs.pc $%08x, fault.pc $%08x, fault.op $%04x, fault.ad $%08x, fault.ia %d', n, regs.pc, fault.pc, fault.op, fault.ad, fault.ia ? 1 : 0));
+            //BUG.say(sprintf('cpu.exception() %d, regs.pc $%08x, fault.pc $%08x, fault.op $%04x, fault.ad $%08x, fault.ia %d', n, regs.pc, fault.pc, fault.op, fault.ad, fault.ia ? 1 : 0));
 
             var ia = fault.ia;
             var wa = 0;
@@ -5373,7 +5374,7 @@ EstyJs.Processor = function (opts) {
 
         var pc = memory.readLong(n * 4);
         if (pc & 1) {
-            BUG.say(sprintf('cpu.exception() ADDRESS ERROR pc $%08x', pc));
+            //BUG.say(sprintf('cpu.exception() ADDRESS ERROR pc $%08x', pc));
             if (n == 2 || n == 3) {
                 //AMIGA.reset();
                 throw new Error('double address/bus-error');
@@ -5529,12 +5530,13 @@ EstyJs.Processor = function (opts) {
         prefetch2 = memory.readWord(regs.pc + 2);
         regs.stopped = false;
 
-        BUG.say(sprintf('cpu.reset() addr 0x%08x, A7 0x%08x, PC 0x%08x', addr, regs.a[7], regs.pc));
+        //BUG.say(sprintf('cpu.reset() addr 0x%08x, A7 0x%08x, PC 0x%08x', addr, regs.a[7], regs.pc));
     }
 
     /*-----------------------------------------------------------------------*/
 
     self.runCode = function () {
+        "use strict";
         while (tot_cycles < frameRowCycles) {
             //AMIGA.events.cycle(cpu_cycles);
 
@@ -5553,7 +5555,13 @@ EstyJs.Processor = function (opts) {
             }
 
             try {
-                var op = nextOPCode();
+                var op = prefetch1;
+                prefetch1 = prefetch2;
+                fault.pc = regs.pc;
+                fault.op = op;
+                regs.pc += 2;
+                prefetch2 = memory.readWord(regs.pc + 2);
+
                 var lastPc = regs.pc;
 
                 var cycles = iTab[op].f(iTab[op].p);
@@ -5572,10 +5580,10 @@ EstyJs.Processor = function (opts) {
                 //BUG.info('cpu.cycle_real() VSYNC [%s]', e);
                 cpu_cycles = 48 * cpu_cycle_unit;	
                 throw new VSync(e.error, e.message);
-                } 
-                else {  				
+                } */
+                else {
                 Fatal(SAEE_CPU_Internal, e.message);
-                }*/
+                }
             }
 
 
