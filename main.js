@@ -57,10 +57,10 @@ function fileSelected2(evt) {
 function soundToggle() {
 	var sound = estyjs.soundToggle();
 	if (sound) {
-		$("#btnSound span").text("Sound off");
+		$("#btnSound span").text("Turn sound off");
 	}
 	else {
-		$("#btnSound span").text("Sound on");
+		$("#btnSound span").text("Turn sound on");
 	}
 }
 
