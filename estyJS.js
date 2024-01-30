@@ -14,8 +14,10 @@ function EstyJs(output) {
 
 	var running = true;
 	
-	var soundEnabled = true;
+	var soundInit = false;
 	
+	var soundEnabled = false;
+
 	var requestAnimationFrame = (
 		//window.requestAnimationFrame || window.msRequestAnimationFrame ||
 		//window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame ||
@@ -110,7 +112,6 @@ function EstyJs(output) {
 	function runframe() {
 		if (running & memory.loaded==1) {
 			if (firstFrame) {
-			    sound.init();
 			    self.reset();
 				firstFrame = false;
 			}
@@ -164,6 +165,10 @@ function EstyJs(output) {
 	
 	self.soundToggle = function() {
 		soundEnabled = !soundEnabled;
+		if (soundEnabled && !soundInit) {
+			sound.init();
+			soundInit = true;
+		}
 		return soundEnabled;
 	}
 
