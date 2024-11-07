@@ -230,5 +230,9 @@ function EstyJs(output) {
         return keyboard.mouseLocked();
 	}
 
+	self.setRowSkip = function(val) {
+		display.setRowSkip(val);
+	}
+
 	return self;
 }

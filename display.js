@@ -66,6 +66,9 @@ EstyJs.Display = function (opts) {
 
     var pixelIndex = 0;
 
+    // Skip every other row
+    var rowSkip = true;
+
     self.reset = function () {
     }
 
@@ -180,7 +183,7 @@ EstyJs.Display = function (opts) {
 
 
                 }
-                pixelIndex += 640;
+                if (rowSkip) pixelIndex += 640;
                 break;
             case 1:
                 //med res
@@ -241,7 +244,7 @@ EstyJs.Display = function (opts) {
 
 
                 }
-                pixelIndex += 640;
+                if (rowSkip) pixelIndex += 640;
                 break;
             case 2:
                 //high res
@@ -489,7 +492,7 @@ EstyJs.Display = function (opts) {
 
 
                 }
-                pixelIndex += 2560;
+                if (rowSkip) pixelIndex += 2560;
                 break;
             case 1:
                 //med res
@@ -596,7 +599,7 @@ EstyJs.Display = function (opts) {
 
 
                 }
-                pixelIndex += 2560;
+                if (rowSkip) pixelIndex += 2560;
                 break;
             case 2:
                 //high res
@@ -765,9 +768,11 @@ EstyJs.Display = function (opts) {
         if (screenRowStart < 0xfffff && (flipFlop)) {
             if (buf8 != null) {
                 optimisedScreenDraw();
+                if (!rowSkip && (screenMode & 3) < 2) optimisedScreenDraw();
             }
             else {
                 standardScreenDraw();
+                if (!rowSkip && (screenMode & 3) < 2) standardScreenDraw();
             }
         }
 
@@ -838,6 +843,10 @@ EstyJs.Display = function (opts) {
         for (var i = 0; i < 32; i++) {
             palette8[i] = data.palette[i];
         }
+    }
+
+    self.setRowSkip = function (val) {
+        rowSkip = val;
     }
 
     return self;
