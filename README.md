@@ -7,3 +7,11 @@ I was asked to update this repo to include licensing information so that others 
 Since this repo uses portions of code from SAE which is licensed under GPL V2 this is considered a derivative work and is also licensed under the same conditions.
 
 See gpl.htm in this repo.
+
+Kai Eckert has decided to continue to develop this emulator.
+
+Please see the below github fork:
+https://github.com/kaiec/EstyJS
+
+An updated version of the emulator is available here:
+https://kaiec.github.io/EstyJS/
